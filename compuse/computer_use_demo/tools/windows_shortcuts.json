@@ -1,0 +1,142 @@
+{
+    "switch_window": {
+        "keys": ["alt", "tab"],
+        "requires_target": true,
+        "window_title": null
+    },
+    "open_start_menu": {
+        "keys": ["win"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "minimize_window": {
+        "keys": ["win", "down"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "maximize_window": {
+        "keys": ["win", "up"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "restore_window": {
+        "keys": ["win", "down"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "close_window": {
+        "keys": ["alt", "f4"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "take_screenshot": {
+        "keys": ["win", "prtsc"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "go_to_desktop": {
+        "keys": ["win", "d"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "switch_virtual_desktop_left": {
+        "keys": ["win", "ctrl", "left"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "switch_virtual_desktop_right": {
+        "keys": ["win", "ctrl", "right"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "open_file_explorer": {
+        "keys": ["win", "e"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "refresh_explorer": {
+        "keys": ["f5"],
+        "requires_target": false,
+        "window_title": "File Explorer"
+    },
+    "open_task_manager": {
+        "keys": ["ctrl", "shift", "esc"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "lock_workstation": {
+        "keys": ["win", "l"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "sign_out": {
+        "keys": ["ctrl", "alt", "del"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "hibernate": {
+        "keys": ["win", "x", "u", "h"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "sleep": {
+        "keys": ["win", "x", "u", "s"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "copy": {
+        "keys": ["ctrl", "c"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "paste": {
+        "keys": ["ctrl", "v"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "cut": {
+        "keys": ["ctrl", "x"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "select_all": {
+        "keys": ["ctrl", "a"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "open_run_dialog": {
+        "keys": ["win", "r"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "open_settings": {
+        "keys": ["win", "i"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "open_search": {
+        "keys": ["win", "s"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "toggle_high_contrast": {
+        "keys": ["left_alt", "left_shift", "printscreen"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "toggle_narrator": {
+        "keys": ["left_win", "ctrl", "enter"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "toggle_magnifier": {
+        "keys": ["left_win", "plus"],
+        "requires_target": false,
+        "window_title": null
+    },
+    "custom_action": {
+        "keys": [],
+        "requires_target": false,
+        "window_title": null
+    }
+}

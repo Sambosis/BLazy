@@ -1,0 +1,1 @@
+install python 3.12 and pip and uv so that they are available globally and on path  init a test project with uc and create a venc with it

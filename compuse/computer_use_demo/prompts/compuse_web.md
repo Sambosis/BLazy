@@ -1,0 +1,1 @@
+clone the repo at github.com/sambosis/compuse and convert so that the the program that runs when you run /compuse/computer_use_demo/loop.py runs as a web app

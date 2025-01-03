@@ -1,0 +1,1 @@
+There is a repo at c:/repo/algebra The app is currently working, I do not need you to make changes to that.  However, could you please update the user interface to be more visually appealing?

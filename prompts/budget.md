@@ -1,0 +1,1 @@
+analyze each sheet in "C:\Users\Machine81\OneDrive\Documents\650 2025 Budget ollld.xlsx" and give a report on each one, after that create a comprehensive report on the entire file. save your work to markdown files in c:/repo/budget
