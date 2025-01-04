@@ -26,7 +26,8 @@ SYSTEM_PROMPT_FILE = SYSTEM_PROMPT_DIR / "system_prompt.md"
 
 # Create necessary directories
 JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
-
+print(f"Journal directory: {JOURNAL_DIR}")
+print(f"debug_log.json: {ICECREAM_OUTPUT_FILE}")
 # Load journal system prompt
 try:
     with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:

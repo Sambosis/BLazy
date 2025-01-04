@@ -1,0 +1,16 @@
+filepath,name,docstring,methods_count,base_classes,variables_count,methods,has_docstring
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,CodeFile,,1,[],6,['to_message'],False
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,CodeContextManager,,10,[],0,"['__init__', 'update_file', 'get_context_messages', 'save_to_disk', 'load_from_disk', 'remove_file', 'apply_llm_response', 'replace_file_content', 'add_code_to_file', 'extract_dependencies']",False
+c:\mygit\compuse\computer_use_demo\loop.py,OutputManager,Manages and formats tool outputs and responses.,6,[],0,"['__init__', 'save_image', 'format_tool_output', 'format_api_response', 'format_content_block', 'format_recent_conversation']",True
+c:\mygit\compuse\computer_use_demo\loop.py,TokenTracker,Tracks total token usage across all iterations.,3,[],0,"['__init__', 'update', 'display']",True
+c:\mygit\compuse\computer_use_demo\tools\bash_original.py,_BashSession,A session of a bash shell.,2,[],6,"['__init__', 'stop']",True
+c:\mygit\compuse\computer_use_demo\tools\bash_original.py,BashTool,"A tool that allows the agent to run bash commands.
+The tool parameters are defined by Anthropic and are not editable.",2,['BaseAnthropicTool'],3,"['__init__', 'to_params']",True
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,CodeFile,,1,[],6,['to_message'],False
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,CodeContextManager,,10,[],0,"['__init__', 'update_file', 'get_context_messages', 'save_to_disk', 'load_from_disk', 'remove_file', 'apply_llm_response', 'replace_file_content', 'add_code_to_file', 'extract_dependencies']",False
+c:\mygit\compuse\computer_use_demo\tools\collection.py,ToolCollection,A collection of anthropic-defined tools.,2,[],0,"['__init__', 'to_params']",True
+c:\mygit\compuse\computer_use_demo\tools\expert.py,GetExpertOpinionTool,"A tool takes a detailed description of the problem and everything that has been tried so far, and returns an expert opinion on the problem.",1,['BaseAnthropicTool'],3,['to_params'],True
+c:\mygit\compuse\computer_use_demo\tools\playwright.py,WebNavigatorTool,"A versatile tool that uses Playwright to interact with the web, including reading information,
+navigating websites, filling forms, extracting data, interacting with dynamic elements, and downloading files.
+It also integrates with external APIs and includes enhanced error handling and #logging.",5,[],3,"['__init__', 'to_params', '_create_structured_content', 'integrate_external_api', 'get_session_history']",True
+c:\mygit\compuse\computer_use_demo\tools\windows_navigation.py,WindowsNavigationTool,A tool specializing in navigating Windows and Windows applications using keyboard shortcuts.,4,[],3,"['__init__', '_load_shortcuts', 'to_params', 'get_session_history']",True

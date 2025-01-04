@@ -1,3 +1,4 @@
+import re
 from icecream import ic
 from datetime import datetime
 from typing import cast, List, Optional, Any
@@ -362,14 +363,14 @@ async def create_journal_entry(entry_number: int, messages: List[BetaMessagePara
 
         # Create prompt with both current journal and recent messages
         journal_prompt = f"""
-Current Journal Contents:
-{current_journal}
+        Current Journal Contents:
+        {current_journal}
 
-Recent Messages:
-{conversation_text}
+        Recent Messages:
+        {conversation_text}
 
-Please provide an updated comprehensive journal entry that incorporates both the existing progress and new developments.
-"""
+        Please provide an updated comprehensive journal entry that incorporates both the existing progress and new developments.
+        """
 
         # Get updated journal from Haiku
         haiku_response = client.messages.create(
@@ -447,6 +448,9 @@ async def call_llm_with_retry(client, messages, max_tokens, model, system, tools
 async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key: str, max_tokens: int = 6000,) -> List[BetaMessageParam]:
     #CWD = Path.cwd()
     ic(messages)
+    # create a variable of type APIResponse named response
+    response = None
+    
     try:
         # Initialize tools with proper error handling
         tool_collection = ToolCollection(
@@ -534,11 +538,12 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                         f.write("\n\n")
  
                 # Update token tracker
-                token_tracker.update(response)
-                token_tracker.display() 
+                # token_tracker.update(response)
+                # token_tracker.display() 
 
                 # Convert response content to params format
                 response_params = []
+
                 for block in response.content:
                     if hasattr(block, 'text'):
                         output_manager.format_api_response(response)
