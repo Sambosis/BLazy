@@ -6,7 +6,7 @@ Create an interactive website for code analysis visualization that allows users 
 
 Please follow these specific steps:
 
-1. First, create a complete directory structure at"C:\repo\testsite" and set up a Python virtual environment.  You will be working in Microsoft Windows. So use the appropriate commands for Windows including powershell.  
+1. First, create a complete directory structure at"C:\repo\testsite2" and set up a Python virtual environment.  You will be working in Microsoft Windows. So use the appropriate commands for Windows including powershell.  
 - Also, make sure that the paths you use are complete paths including the drive letter. which will be C:\
 - Show exact commands for creating and activating venv
 - Include a requirements.txt file with all necessary dependencies
@@ -36,22 +36,8 @@ Please follow these specific steps:
 - All CSS styling
 - All utility functions for code analysis
 
-6. Provide specific testing instructions:
-- How to start the server
-- How to upload test files
-- How to verify each feature
-- Expected behavior for each interaction
 
 7. Include detailed comments in all code files explaining functionality
 
-8. Show the exact commands to:
-- Run the application
-- Test all features
-- Verify the visualization is working
-- Confirm search functionality
-
-The final application should be fully functional locally and demonstrate proper separation of concerns, error handling, and user experience design.
 
 Please provide all code files, setup instructions, and testing steps in a clear, organized manner.
-Remember to ask for expert opinions and provide full details to the expert about the commands you have tried. 
-It may be helpful to create and run some python scripts to create files directories etc.  You can also write powershell scripts to do some actions if you need to.

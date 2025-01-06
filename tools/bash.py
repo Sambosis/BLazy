@@ -18,7 +18,8 @@ import subprocess
 import sys
 import io
 import traceback
-
+# adding the following import to fix this error "NameError: name 'datetime' is not defined. Did you forget to import 'datetime'"
+from datetime import datetime
 PROMPT_FILE = Path(r"C:\mygit\compuse\computer_use_demo\tools\bash.md")
 
 def read_prompt_from_file(file_path: str, bash_command: str) -> str:
@@ -29,9 +30,13 @@ def read_prompt_from_file(file_path: str, bash_command: str) -> str:
     Option A: A Python script that performs the equivalent action.
     Option B: A PowerShell script that performs the equivalent action.
     Requirements:
+    DO NOT USE sys.exit() or any other method that terminates the script execution
     If the command involves file or directory operations (e.g., mkdir, touch, rm, cp), ensure that the script includes error handling (e.g., checking if a file or directory exists before performing the operation).
     If the command involves nested or complex structures (e.g., mkdir -p /path/<dir1,dir2>), expand the structure into individual operations.
     If the command involves environment-specific behavior (e.g., activating a virtual environment), adapt the script to the target platform (Windows for PowerShell, cross-platform for Python).
+    Remember, you are working in Window's, so whenever you see a the letter c near the beginning of a Path, it is a typo and use the C drive in it's place.
+    You should use the pathlib in your python code to help you create the proper paths.
+    Always use full absolute paths including the drive.
     Include comments in the generated script to explain each step.
     Output Format:
     Clearly label the output as either "Python Script" or "PowerShell Script."
@@ -79,6 +84,7 @@ def read_prompt_from_file(file_path: str, bash_command: str) -> str:
     >
     Important Notes:
     Ensure the generated script is valid and executable.
+    Ensure that the python code handles errors in a way that will allow the execution of the main program to continue.
     Avoid unnecessary complexity; keep the script concise and readable.
     If the Bash command is invalid or unsupported, return an error message explaining why.
     Input: {bash_command}
@@ -125,8 +131,6 @@ def parse_llm_response(response: str):
 
 def execute_script(script_type: str, script_code: str):
     """Execute the extracted script and capture output and errors."""
-    output= ""
-
     if script_type == "Python Script":
         rr("Executing Python script...")
         # Redirect stdout and stderr
@@ -139,22 +143,27 @@ def execute_script(script_type: str, script_code: str):
             exec(script_code)
             output_out = redirected_output.getvalue()
             error_out = redirected_error.getvalue()
+            
+            # Save successful code
+            if not error_out:
+                saved_path = save_successful_code(script_code)
+                output_out += f"\nCode saved to: {saved_path}"
+                
         except Exception as e:
             output_out = ""
             error_out = f"Error: {str(e)}\n{traceback.format_exc()}"
         finally:
-            # Restore stdout and stderr
-            sys.stdout, sys.stderr = old_stdout, old_stderr
-        
-            rr(f"Output: {output_out}")
-            rr(f"Error: {error_out}")
-            return {"success": True if not error_out else False, "output": output_out, "error": error_out}
+            sys.stdout, sys.stderr = old_stdout, old_stderr        
+        rr(f"Output: {output_out}")
+        rr(f"Error: {error_out}")
+        return {"success": True if not error_out else False, "output": output_out, "error": error_out}
 
     elif script_type == "PowerShell Script":
         rr("Executing PowerShell script...")
         script_file = "temp_script.ps1"
         with open(script_file, "w") as f:
             f.write(script_code)
+        output=""
         try:
             result = subprocess.run(
                 ["powershell.exe", "-File", script_file],
@@ -181,6 +190,7 @@ def execute_script(script_type: str, script_code: str):
 
     else:
         raise ValueError(f"Unsupported script type: {script_type}")
+# from loop_gfix import get_workspace_dir
 
 class BashTool(BaseAnthropicTool):
     description="""
@@ -223,3 +233,25 @@ class BashTool(BaseAnthropicTool):
         }   
     
 
+
+def save_successful_code(script_code: str) -> str:
+    """Save successfully executed Python code to a file."""
+    # Create directory if it doesn't exist
+    save_dir = Path("./llm_gen_code")
+    save_dir.mkdir(exist_ok=True)
+    
+    # Extract first line of code for filename (cleaned)
+    first_line = script_code.split('\n')[0].strip()
+    # Clean the first line to create a valid filename
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '_', first_line)[:30]
+    
+    # Create unique filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{clean_name}_{timestamp}.py"
+    
+    # Save the code
+    file_path = save_dir / filename
+    with open(file_path, 'w') as f:
+        f.write(script_code)
+    
+    return str(file_path)

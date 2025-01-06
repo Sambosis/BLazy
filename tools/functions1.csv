@@ -1,0 +1,34 @@
+filepath,name,docstring,args,return_annotation,decorators
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,extract_code_blocks,"Extracts code blocks from the response text.
+
+Returns a list of tuples containing the language and code.
+For example: [(""python"", ""def foo(): pass""), ...]","[{'name': 'response_text', 'type_annotation': 'str', 'default_value': None}]","List[Tuple[str, str]]",[]
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,is_code_valid,Checks if the provided Python code is syntactically correct.,"[{'name': 'code', 'type_annotation': 'str', 'default_value': None}]",bool,[]
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,replace_file,Replaces the entire content of the specified file with new_content.,"[{'name': 'file_path', 'type_annotation': 'str', 'default_value': None}, {'name': 'new_content', 'type_annotation': 'str', 'default_value': None}]",None,[]
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,insert_code_after_function,Inserts code after the specified function in a Python file.,"[{'name': 'original_content', 'type_annotation': 'str', 'default_value': None}, {'name': 'function_name', 'type_annotation': 'str', 'default_value': None}, {'name': 'code_to_add', 'type_annotation': 'str', 'default_value': None}]",str,[]
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,extract_single_code_block,Extracts a single code block's language and code.,"[{'name': 'code_block', 'type_annotation': 'str', 'default_value': None}]","Tuple[Optional[str], Optional[str]]",[]
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,commit_changes,Commits changes to the git repository with the provided message.,"[{'name': 'message', 'type_annotation': 'str', 'default_value': None}]",None,[]
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,run_tests,Runs the test suite and returns True if all tests pass.,[],bool,[]
+c:\mygit\compuse\computer_use_demo\code_context_manager.py,revert_last_commit,Reverts the last git commit.,[],None,[]
+c:\mygit\compuse\computer_use_demo\loop.py,write_to_file,"Write debug output to a file, formatting JSON content in a pretty way.","[{'name': 's', 'type_annotation': None, 'default_value': 'ICECREAM_OUTPUT_FILE'}, {'name': 'file_path', 'type_annotation': None, 'default_value': None}]",,[]
+c:\mygit\compuse\computer_use_demo\loop.py,_make_api_tool_result,Convert tool result to API format.,"[{'name': 'result', 'type_annotation': 'ToolResult', 'default_value': None}, {'name': 'tool_use_id', 'type_annotation': 'str', 'default_value': None}]",dict,[]
+c:\mygit\compuse\computer_use_demo\loop.py,_inject_prompt_caching,"Set cache breakpoints for the 3 most recent turns
+one cache breakpoint is left for tools/system prompt, to be shared across sessions","[{'name': 'messages', 'type_annotation': 'list[BetaMessageParam]', 'default_value': None}]",,[]
+c:\mygit\compuse\computer_use_demo\loop.py,_maybe_filter_to_n_most_recent_images,"With the assumption that images are screenshots that are of diminishing value as
+the conversation progresses, remove all but the final `images_to_keep` tool_result
+images in place, with a chunk of min_removal_threshold to reduce the amount we
+break the implicit prompt cache.","[{'name': 'messages', 'type_annotation': 'list[BetaMessageParam]', 'default_value': None}, {'name': 'images_to_keep', 'type_annotation': 'int', 'default_value': None}, {'name': 'min_removal_threshold', 'type_annotation': 'int', 'default_value': None}]",,[]
+c:\mygit\compuse\computer_use_demo\loop.py,main,Main entry point with proper async handling.,[],,[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,extract_code_blocks,"Extracts code blocks from the response text.
+
+Returns a list of tuples containing the language and code.
+For example: [(""python"", ""def foo(): pass""), ...]","[{'name': 'response_text', 'type_annotation': 'str', 'default_value': None}]","List[Tuple[str, str]]",[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,is_code_valid,Checks if the provided Python code is syntactically correct.,"[{'name': 'code', 'type_annotation': 'str', 'default_value': None}]",bool,[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,replace_file,Replaces the entire content of the specified file with new_content.,"[{'name': 'file_path', 'type_annotation': 'str', 'default_value': None}, {'name': 'new_content', 'type_annotation': 'str', 'default_value': None}]",None,[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,insert_code_after_function,Inserts code after the specified function in a Python file.,"[{'name': 'original_content', 'type_annotation': 'str', 'default_value': None}, {'name': 'function_name', 'type_annotation': 'str', 'default_value': None}, {'name': 'code_to_add', 'type_annotation': 'str', 'default_value': None}]",str,[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,extract_single_code_block,Extracts a single code block's language and code.,"[{'name': 'code_block', 'type_annotation': 'str', 'default_value': None}]","Tuple[Optional[str], Optional[str]]",[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,commit_changes,Commits changes to the git repository with the provided message.,"[{'name': 'message', 'type_annotation': 'str', 'default_value': None}]",None,[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,run_tests,Runs the test suite and returns True if all tests pass.,[],bool,[]
+c:\mygit\compuse\computer_use_demo\tools\code_context_manager.py,revert_last_commit,Reverts the last git commit.,[],None,[]
+c:\mygit\compuse\computer_use_demo\tools\collection.py,write_to_file,"Write debug output to a file, formatting JSON content in a pretty way.","[{'name': 's', 'type_annotation': None, 'default_value': 'ICECREAM_OUTPUT_FILE'}, {'name': 'file_path', 'type_annotation': None, 'default_value': None}]",,[]
+c:\mygit\compuse\computer_use_demo\tools\run.py,maybe_truncate,Truncate content and append a notice if content exceeds the specified length.,"[{'name': 'content', 'type_annotation': 'str', 'default_value': 'MAX_RESPONSE_LEN'}, {'name': 'truncate_after', 'type_annotation': 'int | None', 'default_value': None}]",,[]

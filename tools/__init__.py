@@ -1,14 +1,15 @@
 from .base import BaseAnthropicTool, ToolError, ToolResult
 from .bash import BashTool
+from .edit import EditTool
 from .computer import ComputerTool
 from .edit import EditTool
 from .collection import ToolCollection
 from .expert import GetExpertOpinionTool
 from .playwright import WebNavigatorTool
-# from .gotourl_reports import GoToURLReportsTool
+#from .gotourl_reports import GoToURLReportsTool
 # from .get_serp import GoogleSearchTool
 # from .windows_navigation import WindowsNavigationTool
-from .test_navigation_tool import windows_navigate
+# from .test_navigation_tool import windows_navigate
 __all__ = [
     "BaseAnthropicTool",
     "ToolError",
@@ -19,9 +20,9 @@ __all__ = [
     "ToolCollection",
     "GetExpertOpinionTool",
     "WebNavigatorTool",
-    "GoToURLReportsTool",
-    "GoogleSearchTool",
+    # "GoToURLReportsTool",
+    # "GoogleSearchTool",
     # "WindowsNavigationTool"
-    "windows_navigate"
+    # "windows_navigate"
 ]
 

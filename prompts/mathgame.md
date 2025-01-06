@@ -1,4 +1,5 @@
-
+The following game has some work done, but it still needs to be more visually appealing,  easier to read fonts and colors,  and Math Formula's should be displayed in a more readable format such as LaTeX.
+There also needs to be Many more problems of all level. 
 Create a flask-based algebra learning game with the following specifications:
 It should not have a alot of features, just the basics.
 The goal is just to get the game working.
@@ -14,6 +15,7 @@ Technical Requirements:
 Store problems and solutions in a structured JSON format
 Include local storage for progress tracking
 Problem Categories to Include:
+ALL PROBLEMS MUST BE MULTIPLE CHOICE FOR ALL GRADE LEVELS
 7th Grade Level:
 Basic equations with one variable
 Integer operations
@@ -59,5 +61,5 @@ Each step should be focused making a working prototype.
 Does not need to be production ready, just basic functionality.
 No need to test, just get it working.
 If you can identify a next step that would enable the flask app to run and a user to interact with it, then do that next.
-Create the project in the C:\repo\algebra folder.
+Create the project in the C:\repo\algame folder.
 You will be using Microsoft Windows 11 Operating System.

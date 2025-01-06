@@ -1,6 +1,7 @@
 # windows_navigation_tool.py
 # windows_navigation_tool.py
 
+from numpy import short
 import pyautogui
 import time
 from typing import Optional
