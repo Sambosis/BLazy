@@ -89,7 +89,7 @@ def read_prompt_from_file(file_path: str, bash_command: str) -> str:
     If the Bash command is invalid or unsupported, return an error message explaining why.
     Input: {bash_command}
     Output: """
-    rr("Prompt")
+    # rr("Prompt")
     return prompt_string
 
 async def generate_script_with_llm(prompt: str) -> str:
@@ -109,7 +109,7 @@ async def generate_script_with_llm(prompt: str) -> str:
             ],
 
         )
-        rr(f"Raw Content:   {response.content[0].text}")
+        # rr(f"Raw Content:   {response.content[0].text}")
         return response.content[0].text
     except Exception as e:
         raise ToolError(f"Error during LLM API call: {e}")
@@ -125,8 +125,8 @@ def parse_llm_response(response: str):
     
     script_type = match.group(1)
     script_code = match.group(2).strip()
-    rr(f"script_type: {script_type}")
-    rr(f"script_code: {script_code}")
+    # rr(f"script_type: {script_type}")
+    # rr(f"script_code: {script_code}")
     return script_type, script_code
 
 def execute_script(script_type: str, script_code: str):
@@ -154,8 +154,8 @@ def execute_script(script_type: str, script_code: str):
             error_out = f"Error: {str(e)}\n{traceback.format_exc()}"
         finally:
             sys.stdout, sys.stderr = old_stdout, old_stderr        
-        rr(f"Output: {output_out}")
-        rr(f"Error: {error_out}")
+        # rr(f"Output: {output_out}")
+        # rr(f"Error: {error_out}")
         return {"success": True if not error_out else False, "output": output_out, "error": error_out}
 
     elif script_type == "PowerShell Script":
@@ -184,8 +184,8 @@ def execute_script(script_type: str, script_code: str):
             if os.path.exists(script_file):
                 os.remove(script_file)
         
-        rr(f"Output: {output}")
-        rr(f"Error: {error}")
+        # rr(f"Output: {output}")
+        # rr(f"Error: {error}")
         return {"success": success, "output": output, "error": error}
 
     else:
@@ -212,7 +212,7 @@ class BashTool(BaseAnthropicTool):
         """Execute a command in the shell."""
         try:
             prompt = read_prompt_from_file(PROMPT_FILE, command)
-            rr(f"[red]{'*' * 80}[/red]")
+            # rr(f"[red]{'*' * 80}[/red]")
             response = await generate_script_with_llm(prompt)
             script_type, script_code = parse_llm_response(response)
             result = execute_script(script_type, script_code)

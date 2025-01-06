@@ -40,6 +40,20 @@ from load_constants import (
     MAIN_MODEL,
     reload_prompts
 )
+
+
+from typing import Optional, List
+from pathlib import Path
+import base64
+from datetime import datetime
+import hashlib
+from rich import print as rr
+from rich.panel import Panel
+from rich.console import Group
+from rich.table import Table
+from rich.text import Text
+import json
+
 from dotenv import load_dotenv
 load_dotenv()
 install()
@@ -112,12 +126,206 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
         f.write('\n'.join(formatted_lines))
         f.write('\n' + '-' * 80 + '\n')
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
-
+def write_messages_to_file(messages, output_file_path):
+    """
+    Write a list of messages to a specified file.
+    
+    Args:
+        messages (list): List of message dictionaries containing 'role' and 'content'
+        output_file_path (str): Path to the output file
+        
+    Returns:
+        bool: True if successful, False if an error occurred
+    """
+    try:
+        with open(output_file_path, 'w', encoding='utf-8') as f:
+            for msg in messages:
+                f.write(f"\n{msg['role'].upper()}:\n")
+                
+                # Handle content based on its type
+                if isinstance(msg['content'], list):
+                    for content_block in msg['content']:
+                        if isinstance(content_block, dict):
+                            if content_block.get("type") == "tool_result":
+                                f.write(f"Tool Result [ID: {content_block.get('name', 'unknown')}]:\n")
+                                for item in content_block.get("content", []):
+                                    if item.get("type") == "text":
+                                        f.write(f"Text: {item.get('text')}\n")
+                                    elif item.get("type") == "image":
+                                        f.write("Image Source: base64 source too big\n")
+                            else:
+                                for key, value in content_block.items():
+                                    f.write(f"{key}: {value}\n")
+                        else:
+                            f.write(f"{content_block}\n")
+                else:
+                    f.write(f"{msg['content']}\n")
+                
+                # Add a separator between messages for better readability
+                f.write("-" * 80 + "\n")
+        
+        return True
+        
+    except Exception as e:
+        # Write error to a separate error log file
+        error_file_path = output_file_path + ".error.log"
+        try:
+            with open(error_file_path, 'w', encoding='utf-8') as error_file:
+                error_file.write(f"Error during execution: {str(e)}\n")
+        except:
+            # If we can't even write to the error file, return False
+            pass
+        return False
 # --- LOAD SYSTEM PROMPT ---
 with open(Path(r"C:\mygit\compuse\computer_use_demo\system_prompt.md"), 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
-# --- OUTPUT MANAGER ---
+# # --- OUTPUT MANAGER ---
+# class OutputManager:
+#     """Manages and formats tool outputs and responses."""
+#     def __init__(self, image_dir: Optional[Path] = None ):
+#         #CWD = Path.cwd()
+#         # Set up image directory
+#         if image_dir is None:
+#             self.image_dir = Path("default_images")
+#         else:
+#             self.image_dir = image_dir
+#         (CWD / self.image_dir).mkdir(parents=True, exist_ok=True)
+#         self.image_counter = 0
+
+#     def save_image(self, base64_data: str) -> Optional[Path]:
+#         """Save base64 image data to file and return path."""
+#         #CWD = Path.cwd()
+#         self.image_counter += 1
+#         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#         # Create a short hash of the image data for uniqueness
+#         image_hash = hashlib.md5(base64_data.encode()).hexdigest()[:8]
+#         image_path = self.image_dir / f"image_{timestamp}_{image_hash}.png"
+
+#         try:
+#             image_data = base64.b64decode(base64_data)
+#             with open(image_path, 'wb') as f:
+#                 f.write(image_data)
+#             return image_path
+#         except Exception as e:
+#             ic(f"Error saving image: {e}")
+#             return None
+
+#     def format_tool_output(self, result: ToolResult, tool_name: str) -> None:
+#         """Format and print tool output without base64 data."""
+#         rr("\n[bold blue]Tool Execution[/bold blue] 🛠️")
+#         rr(f"[blue]Tool Name:[/blue] {tool_name}")
+
+#         if isinstance(result, str):
+#             rr(f"[red]Error:[/red] {result}")
+#         else:
+#             if result.output:
+#                 # Safely truncate long output
+#                 output_text = result.output
+#                 if len(output_text) > 500:
+#                     output_text = output_text[:200] + "/n.../n" + output_text[-200:]
+#                 rr(f"[green]Output:[/green] {output_text}")
+            
+#             if result.base64_image:
+#                 image_path = self.save_image(result.base64_image)
+#                 if image_path:
+#                     rr(f"[green]📸 Screenshot saved to {image_path}[/green]")
+#                 else:
+#                     rr("[red]Failed to save screenshot[/red]")
+
+#     def format_api_response(self, response: APIResponse) -> None:
+#         """Format and print API response."""
+#         rr("\n[bold purple]Assistant Response[/bold purple] 🤖")
+#         if hasattr(response.content[0], 'text'):
+#             text = response.content[0].text
+#             if len(text) > 500:
+#                 text = text[:300] + "..." + text[-300:]
+#             rr(f"[purple]{text}[/purple]")
+
+#     def format_content_block(self, block: BetaContentBlock) -> None:
+#         """Format and print content block."""
+#         if getattr(block, 'type', None) == "tool_use":
+#             ic(f"\nTool Use: {block.name}")
+#             # Only print non-image related inputs
+#             safe_input = {k: v for k, v in block.input.items()
+#                          if not isinstance(v, str) or len(v) < 1000}
+#             ic(f"Input: {safe_input}")
+#         elif hasattr(block, 'text'):
+#             ic(f"\nText: {block.text}")
+
+#     def format_recent_conversation(self, messages: List[BetaMessageParam], num_recent: int = 2) -> None:
+#         """Format and print the most recent conversation exchanges."""
+#         rr("\n[bold yellow]Recent Conversation[/bold yellow] 💭")
+        
+#         # Get the most recent messages
+#         recent_messages = messages[-num_recent*2:] if len(messages) > num_recent*2 else messages
+        
+#         for msg in recent_messages:
+#             if msg['role'] == 'user':
+#                 rr("\n[bold green]User[/bold green] 👤")
+#                 content = msg['content']
+#                 if isinstance(content, list):
+#                     for content_block in content:
+#                         if isinstance(content_block, dict):
+#                             if content_block.get("type") == "tool_result":
+#                                 rr(f"[green]Tool Result:[/green]")
+#                                 for item in content_block.get("content", []):
+#                                     if item.get("type") == "text":
+#                                         text = item.get("text", "")
+#                                         if len(text) > 500:
+#                                             text = text[:200] + "/n.../n" + text[-200:]
+#                                         rr(f"{text}")
+#                                     elif item.get("type") == "image":
+#                                         rr("[dim]📸 (Screenshot captured)[/dim]")
+#                 else:
+#                     if isinstance(content, str):
+#                         if len(content) > 500:
+#                             content = content[:300] + "..." + content[-300:]
+#                         rr(f"{content}")
+            
+#             elif msg['role'] == 'assistant':
+#                 rr("\n[bold blue]Assistant[/bold blue] 🤖")
+#                 content = msg['content']
+#                 if isinstance(content, list):
+#                     for content_block in content:
+#                         if isinstance(content_block, dict):
+#                             if content_block.get("type") == "text":
+#                                 text = content_block.get("text", "")
+#                                 if len(text) > 500:
+#                                     text = text[:400] + "..." + text[-400:]
+#                                 rr(f"[blue]{text}[/blue]")
+#                             elif content_block.get("type") == "tool_use":
+#                                 rr(f"[cyan]Using tool:[/cyan] {content_block.get('name')}")
+#                                 for k, v in content_block.get('input', {}).items():
+#                                     rr(f"[cyan]{k}:[/cyan] {v}")
+#                                 tool_input = content_block.get('input', "")
+#                                 # if isinstance(tool_input, str) and len(tool_input) > 500:
+#                                     # tool_input = tool_input[:200] + "/n.../" + tool_input[-200:]
+#                                 # rr(f"[cyan]With input:[/cyan] {tool_input}")
+#                                 if isinstance(tool_input, str):
+#                                     # try to load as json
+#                                     try:
+#                                         tool_input = json.loads(tool_input)
+#                                         rr(f"[cyan]With input:[/cyan]")
+#                                         for key, value in tool_input.items():
+#                                             if isinstance(value, str) and len(value) > 500:
+#                                                 rr(f"[cyan]{key}:[/cyan] {value[:200] + '/n.../n'  + value[-200:]}")
+#                                             else:
+#                                                 rr(f"[cyan]{key}:[/cyan] {value}")  
+#                                     except json.JSONDecodeError:
+#                                         if isinstance(tool_input, str):
+#                                             tool_input = tool_input[:200] + "/n.../" + tool_input[-200:]
+#                                         rr(f"[cyan]With input:[/cyan] {tool_input}")
+                                        
+
+#                 elif isinstance(content, str):
+            
+#                     if len(content) > 500:
+#                         content = content[:200] + "/n.../n" + content[-200:]
+#                     rr(f"[blue]{content}[/blue]")
+
+#         rr("\n" + "="*50 + "\n")
+
 class OutputManager:
     """Manages and formats tool outputs and responses."""
     def __init__(self, image_dir: Optional[Path] = None ):
@@ -129,6 +337,13 @@ class OutputManager:
             self.image_dir = image_dir
         (CWD / self.image_dir).mkdir(parents=True, exist_ok=True)
         self.image_counter = 0
+        self.max_output_length = 800  # Define a maximum length for outputs
+
+    def _truncate_text(self, text: str) -> str:
+        """Truncate text if it exceeds the maximum length."""
+        if len(text) > self.max_output_length:
+            return f"{text[:self.max_output_length // 2]}...\n[dim](truncated - see full output in logs)[/dim]\n...{text[-self.max_output_length // 2:]}"
+        return text
 
     def save_image(self, base64_data: str) -> Optional[Path]:
         """Save base64 image data to file and return path."""
@@ -145,123 +360,121 @@ class OutputManager:
                 f.write(image_data)
             return image_path
         except Exception as e:
-            ic(f"Error saving image: {e}")
+            rr(f"[bold red]Error saving image:[/bold red] {e}")
             return None
 
     def format_tool_output(self, result: ToolResult, tool_name: str) -> None:
-        """Format and print tool output without base64 data."""
-        rr("\n[bold blue]Tool Execution[/bold blue] 🛠️")
-        rr(f"[blue]Tool Name:[/blue] {tool_name}")
+        """Format and print tool output."""
+        tool_panel_elements = []
+        tool_panel_elements.append(Text.from_markup(f"[bold blue]Tool Execution[/bold blue] 🛠️", justify="center"))
+        tool_panel_elements.append(Text.from_markup(f"[blue]Tool Name:[/blue] {tool_name}"))
 
         if isinstance(result, str):
-            rr(f"[red]Error:[/red] {result}")
+            tool_panel_elements.append(Text.from_markup(f"[bold red]Error:[/bold red] {self._truncate_text(result)}"))
         else:
             if result.output:
-                # Safely truncate long output
-                output_text = result.output
-                if len(output_text) > 500:
-                    output_text = output_text[:200] + "/n.../n" + output_text[-200:]
-                rr(f"[green]Output:[/green] {output_text}")
-            
+                tool_panel_elements.append(Text.from_markup(f"[green]Output:[/green]"))
+                tool_panel_elements.append(Panel(self._truncate_text(result.output), style="green"))
+
             if result.base64_image:
                 image_path = self.save_image(result.base64_image)
                 if image_path:
-                    rr(f"[green]📸 Screenshot saved to {image_path}[/green]")
+                    tool_panel_elements.append(Text.from_markup(f"[green]📸 Screenshot saved to {image_path}[/green]"))
                 else:
-                    rr("[red]Failed to save screenshot[/red]")
+                    tool_panel_elements.append(Text.from_markup("[bold red]Failed to save screenshot[/bold red]"))
+
+            if result.logs:
+                tool_panel_elements.append(Text.from_markup("[dim]Logs:[/dim]"))
+                tool_panel_elements.append(Panel(self._truncate_text(result.logs), style="dim"))
+
+            if result.exception:
+                tool_panel_elements.append(Text.from_markup("[bold red]Exception:[/bold red]"))
+                tool_panel_elements.append(Panel(self._truncate_text(result.exception), style="bold red"))
+
+        rr(Panel(Group(*tool_panel_elements), title="Tool Result", border_style="blue"))
 
     def format_api_response(self, response: APIResponse) -> None:
         """Format and print API response."""
-        rr("\n[bold purple]Assistant Response[/bold purple] 🤖")
-        if hasattr(response.content[0], 'text'):
-            text = response.content[0].text
-            if len(text) > 500:
-                text = text[:300] + "..." + text[-300:]
-            rr(f"[purple]{text}[/purple]")
+        response_panel_elements = []
+        response_panel_elements.append(Text.from_markup("[bold purple]Assistant Response[/bold purple] 🤖", justify="center"))
+        if hasattr(response, 'content') and response.content:
+            if hasattr(response.content[0], 'text') and response.content[0].text:
+                response_panel_elements.append(Panel(self._truncate_text(response.content[0].text), style="purple"))
+        else:
+            response_panel_elements.append(Text.from_markup("[italic dim]No response content.[/italic dim]"))
+
+        rr(Panel(Group(*response_panel_elements), title="Assistant Response", border_style="purple"))
 
     def format_content_block(self, block: BetaContentBlock) -> None:
         """Format and print content block."""
         if getattr(block, 'type', None) == "tool_use":
-            ic(f"\nTool Use: {block.name}")
-            # Only print non-image related inputs
-            safe_input = {k: v for k, v in block.input.items()
-                         if not isinstance(v, str) or len(v) < 1000}
-            ic(f"Input: {safe_input}")
-        elif hasattr(block, 'text'):
-            ic(f"\nText: {block.text}")
+            tool_use_elements = []
+            tool_use_elements.append(Text.from_markup(f"[bold cyan]Tool Use:[/bold cyan] {block.name}", justify="center"))
+            if block.input:
+                input_table = Table(show_header=True, header_style="bold magenta")
+                input_table.add_column("Input Key", style="magenta")
+                input_table.add_column("Value")
+                for k, v in block.input.items():
+                    if isinstance(v, str) and len(v) > self.max_output_length:
+                        v = f"{v[:self.max_output_length // 2]}...[dim](truncated)[/dim]...{v[-self.max_output_length // 2:]}"
+                    input_table.add_row(k, str(v))
+                tool_use_elements.append(input_table)
+            rr(Panel(Group(*tool_use_elements), title="Tool Invocation", border_style="cyan"))
 
-    def format_recent_conversation(self, messages: List[BetaMessageParam], num_recent: int = 2) -> None:
+        elif hasattr(block, 'text') and block.text:
+            rr(Panel(self._truncate_text(block.text), title="Text Content", border_style="green"))
+
+    def format_recent_conversation(self, messages: List[BetaMessageParam], num_recent: int = 1) -> None:
         """Format and print the most recent conversation exchanges."""
-        rr("\n[bold yellow]Recent Conversation[/bold yellow] 💭")
-        
+        rr(Panel(Text.from_markup("[bold yellow]Recent Conversation[/bold yellow] 💭", justify="center"), border_style="yellow"))
+
         # Get the most recent messages
         recent_messages = messages[-num_recent*2:] if len(messages) > num_recent*2 else messages
-        
+
         for msg in recent_messages:
             if msg['role'] == 'user':
-                rr("\n[bold green]User[/bold green] 👤")
+                user_elements = [Text.from_markup("[bold green]User[/bold green] 👤", justify="left")]
                 content = msg['content']
                 if isinstance(content, list):
                     for content_block in content:
                         if isinstance(content_block, dict):
                             if content_block.get("type") == "tool_result":
-                                rr(f"[green]Tool Result:[/green]")
+                                user_elements.append(Text.from_markup("[green]Tool Result:[/green]"))
                                 for item in content_block.get("content", []):
                                     if item.get("type") == "text":
-                                        text = item.get("text", "")
-                                        if len(text) > 500:
-                                            text = text[:200] + "/n.../n" + text[-200:]
-                                        rr(f"{text}")
+                                        user_elements.append(Panel(self._truncate_text(item.get("text", "")), style="green"))
                                     elif item.get("type") == "image":
-                                        rr("[dim]📸 (Screenshot captured)[/dim]")
+                                        user_elements.append(Text.from_markup("[dim]📸 (Screenshot captured)[/dim]"))
                 else:
                     if isinstance(content, str):
-                        if len(content) > 500:
-                            content = content[:300] + "..." + content[-300:]
-                        rr(f"{content}")
-            
+                        user_elements.append(Panel(self._truncate_text(content), style="green"))
+                rr(Panel(Group(*user_elements), border_style="green"))
+
             elif msg['role'] == 'assistant':
-                rr("\n[bold blue]Assistant[/bold blue] 🤖")
+                assistant_elements = [Text.from_markup("[bold blue]Assistant[/bold blue] 🤖", justify="left")]
                 content = msg['content']
                 if isinstance(content, list):
                     for content_block in content:
                         if isinstance(content_block, dict):
                             if content_block.get("type") == "text":
-                                text = content_block.get("text", "")
-                                if len(text) > 500:
-                                    text = text[:400] + "..." + text[-400:]
-                                rr(f"[blue]{text}[/blue]")
+                                assistant_elements.append(Panel(self._truncate_text(content_block.get("text", "")), style="blue"))
                             elif content_block.get("type") == "tool_use":
-                                rr(f"[cyan]Using tool:[/cyan] {content_block.get('name')}")
-                                for k, v in content_block.get('input', {}).items():
-                                    rr(f"[cyan]{k}:[/cyan] {v}")
-                                tool_input = content_block.get('input', "")
-                                # if isinstance(tool_input, str) and len(tool_input) > 500:
-                                    # tool_input = tool_input[:200] + "/n.../" + tool_input[-200:]
-                                # rr(f"[cyan]With input:[/cyan] {tool_input}")
-                                if isinstance(tool_input, str):
-                                    # try to load as json
-                                    try:
-                                        tool_input = json.loads(tool_input)
-                                        rr(f"[cyan]With input:[/cyan]")
-                                        for key, value in tool_input.items():
-                                            if isinstance(value, str) and len(value) > 500:
-                                                rr(f"[cyan]{key}:[/cyan] {value[:200] + '/n.../n'  + value[-200:]}")
-                                            else:
-                                                rr(f"[cyan]{key}:[/cyan] {value}")  
-                                    except json.JSONDecodeError:
-                                        if isinstance(tool_input, str):
-                                            tool_input = tool_input[:200] + "/n.../" + tool_input[-200:]
-                                        rr(f"[cyan]With input:[/cyan] {tool_input}")
-                                        
+                                assistant_elements.append(Text.from_markup(f"[cyan]Using tool:[/cyan] {content_block.get('name')}"))
+                                if 'input' in content_block and isinstance(content_block['input'], dict):
+                                    input_table = Table(show_header=True, header_style="bold magenta")
+                                    input_table.add_column("Input Key", style="magenta")
+                                    input_table.add_column("Value")
+                                    for key, value in content_block['input'].items():
+                                        if isinstance(value, str) and len(value) > self.max_output_length:
+                                            value = f"{value[:self.max_output_length // 2]}...[dim](truncated)[/dim]...{value[-self.max_output_length // 2:]}"
+                                        input_table.add_row(key, str(value))
+                                    assistant_elements.append(input_table)
 
                 elif isinstance(content, str):
-            
-                    if len(content) > 500:
-                        content = content[:200] + "/n.../n" + content[-200:]
-                    rr(f"[blue]{content}[/blue]")
+                    assistant_elements.append(Panel(self._truncate_text(content), style="blue"))
+                rr(Panel(Group(*assistant_elements), border_style="blue"))
 
-        rr("\n" + "="*50 + "\n")
+        rr("-" * 50)
 
 # --- TOOL RESULT CONVERSION ---
 def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> dict:
@@ -494,8 +707,6 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             WebNavigatorTool(),
             # WindowsNavigationTool ()
         )
-        ic(tool_collection)
-
         system = BetaTextBlockParam(type="text", text=SYSTEM_PROMPT)
         output_manager = OutputManager()
         client = Anthropic(api_key=api_key)
@@ -519,8 +730,6 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             betas = [COMPUTER_USE_BETA_FLAG, PROMPT_CACHING_BETA_FLAG]
             image_truncation_threshold = 1
             only_n_most_recent_images = 2
-            if i % 2 == 0:
-                await asyncio.sleep(10)
             i+=1
             if enable_prompt_caching:
                 _inject_prompt_caching(messages)
@@ -542,8 +751,6 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
             try:
                 tool_collection.to_params()
-                if i % 2 == 0:
-                    await asyncio.sleep(10)
                 ic(messages)
 
                 truncated_messages = [
@@ -565,10 +772,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
                 token_tracker.update(response)
                 token_tracker.display()
-                rr(f"Cache Creation Tokens: {response.usage.cache_creation_input_tokens}")
-                rr(f"Cache Retrieval Tokens: {response.usage.cache_read_input_tokens}")
-                rr(f"Output Tokens: {response.usage.output_tokens}")
-                rr(f"Input Tokens: {response.usage.input_tokens}")
+
                 ic(f"Response: {response}")
                 response_params = []
                 for block in response.content:
@@ -822,7 +1026,6 @@ async def main_async():
         # Create new prompt
         filename = Prompt.ask("Enter new prompt filename (without .md)")
         prompt_text = Prompt.ask("Enter your prompt")
-        ic()
         # Save new prompt
         new_prompt_path = prompts_dir / f"{filename}.md"
         with open(new_prompt_path, 'w', encoding='utf-8') as f:
@@ -834,7 +1037,6 @@ async def main_async():
         prompt_path = prompt_files[int(choice) - 1]
         with open(prompt_path, 'r', encoding='utf-8') as f:
             task = f.read()
-        ic()
         rr(f"Selected prompt: {prompt_path}")
     try:
         messages = await run_sampling_loop(task)
