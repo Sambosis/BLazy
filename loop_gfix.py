@@ -64,7 +64,7 @@ MAX_SUMMARY_TOKENS = 8000
 ICECREAM_OUTPUT_FILE =  CWD / "debug_log.json"
 # JOURNAL_FILE = r"C:\mygit\compuse\computer_use_demo\journal\journal.log"
 # JOURNAL_ARCHIVE_FILE = "journal/journal.log.archive"
-MESSAGES_FILE = CWD / "messages.json"
+MESSAGES_FILE = CWD / "messages2.json"
 # --- ARCHIVE OLD LOGS ---
 """Archives a file by appending it to an archive file and clearing the original.
 
@@ -613,7 +613,6 @@ def get_journal_contents() -> str:
     except FileNotFoundError:
         return "No journal entries yet."
 async def create_journal_entry(entry_number: int, messages: List[BetaMessageParam], response: APIResponse, client: Anthropic):
-    #CWD = Path.cwd()
     try:
         # Get current journal contents
         current_journal = get_journal_contents()
@@ -788,11 +787,11 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                         })
                 messages.append({"role": "assistant", "content": response_params})
                 # append the response to the file MESSAGES_FILE
-                with open(MESSAGES_FILE, "a", encoding="utf-8") as f:
-                    f.write(f"""
-                             role": "assistant", "content": 
-                             {response_params}""")
-  
+                # with open(MESSAGES_FILE, "a", encoding="utf-8") as f:
+                #     f.write(f"""
+                #              role": "assistant", "content": 
+                #              {response_params}""")
+                write_messages_to_file(messages, MESSAGES_FILE)
                 output_manager.format_recent_conversation(messages)
 
                 tool_result_content: List[BetaToolResultBlockParam] = []
