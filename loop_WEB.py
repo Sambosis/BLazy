@@ -27,7 +27,7 @@ import time
 import ftfy
 import json
 from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential_jitter
-from tools import BashTool, ComputerTool, EditTool, ToolCollection, ToolResult, GetExpertOpinionTool, WebNavigatorTool#,  GoogleSearchTool # windows_navigate
+from tools import BashTool, ComputerTool, EditTool, ToolCollection, ToolResult, GetExpertOpinionTool, WebNavigatorTool, ProjectSetupTool#,  GoogleSearchTool # windows_navigate
 from load_constants import (
     MAX_SUMMARY_MESSAGES,
     MAX_SUMMARY_TOKENS,
@@ -737,6 +737,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             GetExpertOpinionTool(),
             ComputerTool(),
             WebNavigatorTool(),
+            ProjectSetupTool()
         )
         system = [BetaTextBlockParam(type="text", text=SYSTEM_PROMPT)]
         output_manager = OutputManager()
@@ -798,7 +799,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 )
 
                 token_tracker.update(response)
-                token_tracker.display()  # Display token usage
+                # token_tracker.display()  # Display token usage
 
                 ic(f"Response: {response}")
                 response_params = []

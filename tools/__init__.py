@@ -6,6 +6,7 @@ from .edit import EditTool
 from .collection import ToolCollection
 from .expert import GetExpertOpinionTool
 from .playwright import WebNavigatorTool
+from .venvsetup import ProjectSetupTool
 #from .gotourl_reports import GoToURLReportsTool
 # from .get_serp import GoogleSearchTool
 # from .windows_navigation import WindowsNavigationTool
@@ -20,6 +21,7 @@ __all__ = [
     "ToolCollection",
     "GetExpertOpinionTool",
     "WebNavigatorTool",
+    "ProjectSetupTool",
     # "GoToURLReportsTool",
     # "GoogleSearchTool",
     # "WindowsNavigationTool"
