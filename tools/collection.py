@@ -11,34 +11,9 @@ from .base import (
     ToolFailure,
     ToolResult,
 )
-ICECREAM_OUTPUT_FILE = "debug_log.json"
 
-def write_to_file(s, file_path=ICECREAM_OUTPUT_FILE):
-    """
-    Write debug output to a file, formatting JSON content in a pretty way.
-    """
-    lines = s.split('\n')
-    formatted_lines = []
-    
-    for line in lines:
-        if "tool_input:" in line:
-            try:
-                # Extract JSON part from the line
-                json_part = line.split("tool_input: ")[1]
-                # Parse and pretty-print the JSON
-                json_obj = json.loads(json_part)
-                pretty_json = json.dumps(json_obj, indent=4)
-                formatted_lines.append("tool_input: " + pretty_json)
-            except (IndexError, json.JSONDecodeError):
-                # If parsing fails, just append the original line
-                formatted_lines.append(line)
-        else:
-            formatted_lines.append(line)
-    
-    # Write to file
-    with open(file_path, 'a', encoding="utf-8") as f:
-        f.write('\n'.join(formatted_lines))
-        f.write('\n' + '-' * 80 + '\n')  # Add separator between entries
+from load_constants import WORKER_DIR, ICECREAM_OUTPUT_FILE, write_to_file
+
 
 class ToolCollection:
     """A collection of anthropic-defined tools."""

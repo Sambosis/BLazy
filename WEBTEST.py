@@ -8,7 +8,7 @@ from anthropic.types.beta import BetaContentBlock
 import hashlib
 import base64
 import os
-import asyncio  
+import asyncio
 import pyautogui
 from rich import print as rr
 from icecream import install
@@ -20,6 +20,7 @@ from anthropic.types.beta import (
     BetaTextBlockParam,
     BetaToolResultBlockParam,
 )
+import requests
 import ftfy
 import json
 from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential_jitter
@@ -41,7 +42,7 @@ from load_constants import (
     reload_prompts
 )
 
-
+from flask import Flask
 from typing import Optional, List
 from pathlib import Path
 import base64
@@ -234,7 +235,7 @@ with open(Path(r"C:\mygit\compuse\computer_use_demo\system_prompt.md"), 'r', enc
 
 class OutputManager:
     """Manages and formats tool outputs and responses."""
-    def __init__(self, image_dir: Optional[Path] = None ):
+    def __init__(self, image_dir: Optional[Path] = None, output_queue=None):
         #CWD = Path.cwd()
         # Set up image directory
         if image_dir is None:
@@ -244,6 +245,7 @@ class OutputManager:
         (CWD / self.image_dir).mkdir(parents=True, exist_ok=True)
         self.image_counter = 0
         self.max_output_length = 800  # Define a maximum length for outputs
+        self.output_queue = output_queue  # Queue to push output to
 
     def _truncate_text(self, text: str) -> str:
         """Truncate text if it exceeds the maximum length."""
@@ -268,8 +270,12 @@ class OutputManager:
         except Exception as e:
             rr(f"[bold red]Error saving image:[/bold red] {e}")
             return None
+    async def _enqueue_output(self, output: str):
+        """Puts the output onto the queue for streaming."""
+        if self.output_queue:
+            await self.output_queue.put(output.encode('utf-8'))
 
-    def format_tool_output(self, result: ToolResult, tool_name: str) -> None:
+    async def format_tool_output(self, result: ToolResult, tool_name: str) -> None:
         """Format and print tool output."""
         tool_panel_elements = []
         tool_panel_elements.append(Text.from_markup(f"[bold blue]Tool Execution[/bold blue] 🛠️", justify="center"))
@@ -297,9 +303,11 @@ class OutputManager:
                 tool_panel_elements.append(Text.from_markup("[bold red]Exception:[/bold red]"))
                 tool_panel_elements.append(Panel(self._truncate_text(result.exception), style="bold red"))
 
-        rr(Panel(Group(*tool_panel_elements), title="Tool Result", border_style="blue"))
+        formatted_output = str(Panel(Group(*tool_panel_elements), title="Tool Result", border_style="blue"))
+        await self._enqueue_output(formatted_output)
 
-    def format_api_response(self, response: APIResponse) -> None:
+
+    async def format_api_response(self, response: APIResponse) -> None:
         """Format and print API response."""
         response_panel_elements = []
         response_panel_elements.append(Text.from_markup("[bold purple]Assistant Response[/bold purple] 🤖", justify="center"))
@@ -308,10 +316,9 @@ class OutputManager:
                 response_panel_elements.append(Panel(self._truncate_text(response.content[0].text), style="purple"))
         else:
             response_panel_elements.append(Text.from_markup("[italic dim]No response content.[/italic dim]"))
-
-        rr(Panel(Group(*response_panel_elements), title="Assistant Response", border_style="purple"))
-
-    def format_content_block(self, block: BetaContentBlock) -> None:
+        formatted_output =  str(Panel(Group(*response_panel_elements), title="Assistant Response", border_style="purple"))
+        await self._enqueue_output(formatted_output)
+    async def format_content_block(self, block: BetaContentBlock) -> None:
         """Format and print content block."""
         if getattr(block, 'type', None) == "tool_use":
             tool_use_elements = []
@@ -325,14 +332,18 @@ class OutputManager:
                         v = f"{v[:self.max_output_length // 2]}...[dim](truncated)[/dim]...{v[-self.max_output_length // 2:]}"
                     input_table.add_row(k, str(v))
                 tool_use_elements.append(input_table)
-            rr(Panel(Group(*tool_use_elements), title="Tool Invocation", border_style="cyan"))
+            formatted_output = str(Panel(Group(*tool_use_elements), title="Tool Invocation", border_style="cyan"))
+            await self._enqueue_output(formatted_output)
 
         elif hasattr(block, 'text') and block.text:
-            rr(Panel(self._truncate_text(block.text), title="Text Content", border_style="green"))
+            formatted_output = str(Panel(self._truncate_text(block.text), title="Text Content", border_style="green"))
+            await self._enqueue_output(formatted_output)
 
-    def format_recent_conversation(self, messages: List[BetaMessageParam], num_recent: int = 1) -> None:
+    async def format_recent_conversation(self, messages: List[BetaMessageParam], num_recent: int = 1) -> None:
         """Format and print the most recent conversation exchanges."""
-        rr(Panel(Text.from_markup("[bold yellow]Recent Conversation[/bold yellow] 💭", justify="center"), border_style="yellow"))
+        formatted_output = str(Panel(Text.from_markup("[bold yellow]Recent Conversation[/bold yellow] 💭", justify="center"), border_style="yellow"))
+        await self._enqueue_output(formatted_output)
+        # rr(Panel(Text.from_markup("[bold yellow]Recent Conversation[/bold yellow] 💭", justify="center"), border_style="yellow"))
 
         # Get the most recent messages
         recent_messages = messages[-num_recent*2:] if len(messages) > num_recent*2 else messages
@@ -354,7 +365,9 @@ class OutputManager:
                 else:
                     if isinstance(content, str):
                         user_elements.append(Panel(self._truncate_text(content), style="green"))
-                rr(Panel(Group(*user_elements), border_style="green"))
+                formatted_output = str(Panel(Group(*user_elements), border_style="green"))
+                await self._enqueue_output(formatted_output)
+                # rr(Panel(Group(*user_elements), border_style="green"))
 
             elif msg['role'] == 'assistant':
                 assistant_elements = [Text.from_markup("[bold blue]Assistant[/bold blue] 🤖", justify="left")]
@@ -378,9 +391,14 @@ class OutputManager:
 
                 elif isinstance(content, str):
                     assistant_elements.append(Panel(self._truncate_text(content), style="blue"))
-                rr(Panel(Group(*assistant_elements), border_style="blue"))
+                formatted_output = str(Panel(Group(*assistant_elements), border_style="blue"))
+                await self._enqueue_output(formatted_output)
+                # rr(Panel(Group(*assistant_elements), border_style="blue"))
 
-        rr("-" * 50)
+        formatted_output = str("-" * 50)
+        await self._enqueue_output(formatted_output)
+
+        # rr("-" * 50)
 
 # --- TOOL RESULT CONVERSION ---
 def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> dict:
@@ -599,7 +617,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # --- MAIN SAMPLING LOOP ---
-async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key: str, max_tokens: int = 8000,) -> List[BetaMessageParam]:
+async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key: str, max_tokens: int = 8000, output_queue=None) -> List[BetaMessageParam]:
     global ctrl_c_pressed  # Ensure the variable is accessible within this function
     """Main loop for agentic sampling."""
     ic(messages)
@@ -613,7 +631,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             # WindowsNavigationTool ()
         )
         system = [BetaTextBlockParam(type="text", text=SYSTEM_PROMPT)]
-        output_manager = OutputManager()
+        output_manager = OutputManager(output_queue=output_queue)
         client = Anthropic(api_key=api_key)
         i = 0
         ic(i)
@@ -714,7 +732,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 #              role": "assistant", "content": 
                 #              {response_params}""")
                 write_messages_to_file(messages, MESSAGES_FILE)
-                output_manager.format_recent_conversation(messages)
+                await output_manager.format_recent_conversation(messages)
 
                 tool_result_content: List[BetaToolResultBlockParam] = []
                 for content_block in response_params:
@@ -732,6 +750,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                         tool_result = _make_api_tool_result(result, content_block["id"])
                         ic(tool_result)
                         tool_result_content.append(tool_result)
+                        await output_manager.format_tool_output(result, content_block["name"])
                 if not tool_result_content and len(messages) > 4:
                     rr("\n[bold yellow]Awaiting User Input[/bold yellow] ⌨️")
                     task = Prompt.ask("What would you like to do next? Enter 'no' to exit")
@@ -753,16 +772,16 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
                     # rr("[green]Summary generated - conversation compressed[/green]")
 
-                # try:
-                #     await create_journal_entry(
-                #         entry_number=journal_entry_count,
-                #         messages=messages,
-                #     response=response,
-                #         client=client
-                #     )
-                #     journal_entry_count += 1
-                # except Exception as e:
-                #     ic(f"Error creating journal entry: {str(e)}")
+                try:
+                    await create_journal_entry(
+                        entry_number=journal_entry_count,
+                        messages=messages,
+                    response=response,
+                        client=client
+                    )
+                    journal_entry_count += 1
+                except Exception as e:
+                    ic(f"Error creating journal entry: {str(e)}")
 
             except UnicodeEncodeError as ue:
                 ic(f"UnicodeEncodeError: {ue}")
@@ -925,7 +944,7 @@ Conversation to summarize:
     # okgood =   Prompt.ask(f"[new messages SUMMARY]\n\n{new_messages}")
     return new_messages
 
-async def run_sampling_loop(task: str) -> List[BetaMessageParam]:
+async def run_sampling_loop(task: str, output_queue) -> List[BetaMessageParam]:
     """Run the sampling loop with clean output handling."""
     api_key = os.getenv("ANTHROPIC_API_KEY")
     messages = []
@@ -937,12 +956,108 @@ async def run_sampling_loop(task: str) -> List[BetaMessageParam]:
         model="claude-3-5-sonnet-latest",
         messages=messages,
         api_key=api_key,
+        output_queue=output_queue,
     )
     return messages
 
+app = Flask(__name__)
+
+async def stream_output(task):
+    queue = asyncio.Queue()
+
+    async def run_and_enqueue():
+        try:
+          await run_sampling_loop(task, queue)
+        finally:
+            await queue.put(None)  # Signal end of stream
+
+
+    asyncio.create_task(run_and_enqueue())
+
+    while True:
+        item = await queue.get()
+        if item is None:
+            break
+        yield f"data: {item.decode('utf-8')}\n\n"
+
+@app.route('/stream')
+async def stream():
+    task = request.args.get('task', default='Start')
+    return Response(stream_output(task), mimetype='text/event-stream')
+
+@app.route('/')
+def index():
+  return '''
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <title>Streaming Output</title>
+      <style>
+          body { font-family: monospace; white-space: pre-wrap; }
+          #input-container {
+              display: flex;
+              margin-bottom: 10px;
+          }
+          #prompt-input {
+              flex: 1;
+              padding: 8px;
+              margin-right: 5px;
+              border: 1px solid #ccc;
+          }
+          #submit-button {
+              padding: 8px 12px;
+              background-color: #4CAF50;
+              color: white;
+              border: none;
+              cursor: pointer;
+          }
+      </style>
+  </head>
+  <body>
+      <h1>Console Output</h1>
+       <div id="input-container">
+          <input type="text" id="prompt-input" placeholder="Enter a prompt" />
+          <button id="submit-button">Submit</button>
+      </div>
+      <div id="output"></div>
+      <script>
+      const output = document.getElementById('output');
+      const submitButton = document.getElementById('submit-button');
+      const promptInput = document.getElementById('prompt-input');
+      let eventSource = null;
+
+      function startStream(task) {
+          if (eventSource) {
+              eventSource.close();
+              output.innerHTML = ''; // Clear previous output
+          }
+          eventSource = new EventSource(`/stream?task=${encodeURIComponent(task)}`);
+          
+          eventSource.onmessage = function(event) {
+            output.innerHTML += event.data;
+          };
+
+          eventSource.onerror = function(err){
+            console.error("Event source error:", err)
+            eventSource.close();
+          };
+        }
+
+        submitButton.addEventListener('click', function() {
+          const task = promptInput.value;
+            if (task) {
+              startStream(task);
+              promptInput.value = ''; // clear the input
+            }
+        });
+
+         startStream("Start"); // Start with the default task
+      </script>
+  </body>
+  </html>
+  '''
 
 async def main_async():
-
     """Async main function with proper error handling."""
     # Get list of available prompts
     current_working_dir = Path(os.getcwd())
@@ -957,63 +1072,62 @@ async def main_async():
     rr(f"{len(prompt_files) + 1}. Create new prompt")
     
     # Get user choice
-    choice = Prompt.ask(
-        "Select prompt number",
-        choices=[str(i) for i in range(1, len(prompt_files) + 2)]
-    )
+    # choice = Prompt.ask(
+    #     "Select prompt number",
+    #     choices=[str(i) for i in range(1, len(prompt_files) + 2)]
+    # )
     
-    if int(choice) == len(prompt_files) + 1:
-        # Create new prompt
-        filename = Prompt.ask("Enter new prompt filename (without .md)")
-        prompt_text = Prompt.ask("Enter your prompt")
-        # Save new prompt
-        new_prompt_path = prompts_dir / f"{filename}.md"
-        with open(new_prompt_path, 'w', encoding='utf-8') as f:
-            f.write(prompt_text)
-        task = prompt_text
-        rr(f"New prompt saved to {new_prompt_path}")
-    else:
-        # Read existing prompt
-        prompt_path = prompt_files[int(choice) - 1]
-        with open(prompt_path, 'r', encoding='utf-8') as f:
-            task = f.read()
-        rr(f"Selected prompt: {prompt_path}")
-    try:
-        messages = await run_sampling_loop(task)
-        rr("\nTask Completed Successfully")
+    # if int(choice) == len(prompt_files) + 1:
+    #     # Create new prompt
+    #     filename = Prompt.ask("Enter new prompt filename (without .md)")
+    #     prompt_text = Prompt.ask("Enter your prompt")
+    #     # Save new prompt
+    #     new_prompt_path = prompts_dir / f"{filename}.md"
+    #     with open(new_prompt_path, 'w', encoding='utf-8') as f:
+    #         f.write(prompt_text)
+    #     task = prompt_text
+    #     rr(f"New prompt saved to {new_prompt_path}")
+    # else:
+    #     # Read existing prompt
+    #     prompt_path = prompt_files[int(choice) - 1]
+    #     with open(prompt_path, 'r', encoding='utf-8') as f:
+    #         task = f.read()
+    #     rr(f"Selected prompt: {prompt_path}")
+    # try:
+    #     messages = await run_sampling_loop(task)
+    #     rr("\nTask Completed Successfully")
         
-        # The token summary will be displayed here from sampling_loop
+    #     # The token summary will be displayed here from sampling_loop
         
-        rr("\nFinal Messages:")
-        for msg in messages:
-            rr(f"\n{msg['role'].upper()}:")
-            # If content is a list of dicts (like tool_result), format accordingly
-            if isinstance(msg['content'], list):
-                for content_block in msg['content']:
-                    if isinstance(content_block, dict):
-                        if content_block.get("type") == "tool_result":
-                            rr(f"Tool Result [ID: {content_block.get('name', 'unknown')}]:")
-                            for item in content_block.get("content", []):
-                                if item.get("type") == "text":
-                                    rr(f"Text: {item.get('text')}")
-                                elif item.get("type") == "image":
-                                    rr("Image Source: base64 source too big")#{item.get('source', {}).get('data')}")
-                        else:
-                            for key, value in content_block.items():
-                                rr(f"{key}: {value}")
-                    else:
-                        rr(content_block)
-            else:
-                rr(msg['content'])
+    #     rr("\nFinal Messages:")
+    #     for msg in messages:
+    #         rr(f"\n{msg['role'].upper()}:")
+    #         # If content is a list of dicts (like tool_result), format accordingly
+    #         if isinstance(msg['content'], list):
+    #             for content_block in msg['content']:
+    #                 if isinstance(content_block, dict):
+    #                     if content_block.get("type") == "tool_result":
+    #                         rr(f"Tool Result [ID: {content_block.get('name', 'unknown')}]:")
+    #                         for item in content_block.get("content", []):
+    #                             if item.get("type") == "text":
+    #                                 rr(f"Text: {item.get('text')}")
+    #                             elif item.get("type") == "image":
+    #                                 rr("Image Source: base64 source too big")#{item.get('source', {}).get('data')}")
+    #                     else:
+    #                         for key, value in content_block.items():
+    #                             rr(f"{key}: {value}")
+    #                 else:
+    #                     rr(content_block)
+    #         else:
+    #             rr(msg['content'])
 
-    except Exception as e:
-        rr(f"Error during execution: {e}")
+    # except Exception as e:
+    #     rr(f"Error during execution: {e}")
+    app.run(debug=True, host='0.0.0.0', port=5000)
 
 def main():
     """Main entry point with proper async handling."""
-
     asyncio.run(main_async())
 
 if __name__ == "__main__":
     main()
-

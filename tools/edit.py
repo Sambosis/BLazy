@@ -10,13 +10,16 @@ from .run import maybe_truncate
 from typing import List, Optional
 from icecream import ic
 import sys
+
 from rich import print as rr
 import datetime
 import json
+from load_constants import WORKER_DIR, write_to_file, ICECREAM_OUTPUT_FILE
 # Reconfigure stdout to use UTF-8 encoding
 sys.stdout.reconfigure(encoding='utf-8')
 # include the context for the icecream debugger
-ic.configureOutput(includeContext=True)
+# ic.configureOutput(includeContext=True)
+ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
 # Reconfigure stdout to use UTF-8 encoding
 Command = Literal[
@@ -27,7 +30,7 @@ Command = Literal[
     "undo_edit",
 ]
 SNIPPET_LINES: int = 4
-LOG_FILE = Path("file_creation_log.json")
+LOG_FILE = WORKER_DIR / "file_creation_log.json"
 
 class EditTool(BaseAnthropicTool):
     description="""
@@ -136,7 +139,6 @@ class EditTool(BaseAnthropicTool):
         
         # Remove leading slash if it exists
         normalized_path = re.sub(r'^/', '', normalized_path)
-        
         # Combine with base path
         return Path(f'C:/repo/{normalized_path}')
 
@@ -145,7 +147,7 @@ class EditTool(BaseAnthropicTool):
         Check that the path/command combination is valid in a cross-platform manner.
         param command: The command that the user is trying to run.
         """
-        path = self.normalize_path(path)
+        # path = self.normalize_path(path)
         try:
             # This handles both Windows and Unix paths correctly
             path = path.resolve()
@@ -178,7 +180,7 @@ class EditTool(BaseAnthropicTool):
     async def view(self, path: Path, view_range: Optional[List[int]] = None) -> ToolResult:
         """Implement the view command using cross-platform methods."""
         ic(path)
-        path = self.normalize_path(path)
+        # path = self.normalize_path(path)
         if path.is_dir():
             if view_range:
                 raise ToolError(
@@ -284,7 +286,7 @@ class EditTool(BaseAnthropicTool):
             return ToolResult(output=None, error=str(e), base64_image=None)
     def insert(self, path: Path, insert_line: int, new_str: str) -> ToolResult:
         """Implement the insert command, which inserts new_str at the specified line in the file content."""
-        path = self.normalize_path(path)
+        # path = self.normalize_path(path)
         file_text = self.read_file(path).expandtabs()
         new_str = new_str.expandtabs()
         file_text_lines = file_text.split("\n")
@@ -332,12 +334,12 @@ class EditTool(BaseAnthropicTool):
         if not filename.startswith(base_path):
             # Prepend the base path if it's not present
             filename = os.path.join(base_path, filename.lstrip("/"))
-        filename = self.normalize_path(filename)
+        # filename = self.normalize_path(filename)
         # Return the standardized path using Windows-style separator
         return os.path.normpath(filename)
     def undo_edit(self, path: Path) -> ToolResult:
         """Implement the undo_edit command."""
-        path = self.normalize_path(path)
+        # path = self.normalize_path(path)
         if not self._file_history[path]:
             raise ToolError(f"No edit history found for {path}.")
 
@@ -351,7 +353,7 @@ class EditTool(BaseAnthropicTool):
     def read_file(self, path: Path) -> str:
         rr(path)
 
-        path = self.normalize_path(path)
+        # path = self.normalize_path(path)
 
         try:
             return path.read_text(encoding="utf-8").encode('ascii', errors='replace').decode('ascii')
@@ -359,9 +361,11 @@ class EditTool(BaseAnthropicTool):
             ic(f"Error reading file {path}: {e}")
             raise ToolError(f"Ran into {e} while trying to read {path}") from None
     def write_file(self, path: Path, file: str):
-        path = self.normalize_path(path)
+        # path = self.normalize_path(path)
         """Write the content of a file to a given path; raise a ToolError if an error occurs."""
         try:
+            # create the directory of path if it doesn't exist
+            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(file, encoding="utf-8")
         except Exception as e:
             raise ToolError(f"Ran into {e} while trying to write to {path}") from None

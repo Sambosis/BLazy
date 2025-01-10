@@ -9,7 +9,7 @@ dependencies = [
     "anyio",
     "bandit",
     "bs4",
-    "colorama",
+    "flask>=3.1.0",
     "ftfy",
     "icecream",
     "langchain-ai",

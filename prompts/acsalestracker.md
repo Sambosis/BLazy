@@ -1,5 +1,3 @@
-Please develop the following application in the directory c:/repo/dishsite
-
 # Dish Tracker
 
 A web application prototype for tracking dish machine sales and installations.
@@ -42,6 +40,6 @@ The idea is just for it to be functional, no logging in or security is needed.
   - Paperwork
   - Payment
   - Installation
-- Lease Information
+  - Monthly Service Fee
 Just worry about the basic functionality. That is what is important.  
 
