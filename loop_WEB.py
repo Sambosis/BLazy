@@ -27,7 +27,7 @@ import time
 import ftfy
 import json
 from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential_jitter
-from tools import BashTool, ComputerTool, EditTool, ToolCollection, ToolResult, GetExpertOpinionTool, WebNavigatorTool, ProjectSetupTool#,  GoogleSearchTool # windows_navigate
+from tools import BashTool, ComputerTool, EditTool, ToolCollection, ToolResult, GetExpertOpinionTool, WebNavigatorTool#,  GoogleSearchTool # windows_navigate
 from load_constants import (
     MAX_SUMMARY_MESSAGES,
     MAX_SUMMARY_TOKENS,
@@ -288,7 +288,7 @@ def format_messages_to_html(messages):
                                 output_pieces.append('<div class="tool-input">')
                                 for key, value in inputs.items():
                                     # Truncate long inputs if necessary
-                                    display_value = (value[:88100] + '...') if isinstance(value, str) and len(value) > 99100 else value
+                                    display_value = (value[:100] + '...') if isinstance(value, str) and len(value) > 100 else value
                                     output_pieces.append(f'<div>{key}: {display_value}</div>')
                                 output_pieces.append('</div>')
                         else:
@@ -313,7 +313,8 @@ def format_messages_to_html(messages):
     except Exception as e:
         # Return the error as an HTML-formatted string
         return f"<div class='error red'>Error during formatting: {str(e)}</div>"
-
+def rr(strin):
+    write_to_buffer(strin)
 # --- LOAD SYSTEM PROMPT ---
 with open(Path(r"C:\mygit\compuse\computer_use_demo\system_prompt.md"), 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
@@ -540,7 +541,7 @@ import html
 
 class TokenTracker:
     """Tracks total and recent token usage across all iterations."""
-
+    
     def __init__(self):
         self.total_cache_creation = 0
         self.total_cache_retrieval = 0
@@ -557,7 +558,7 @@ class TokenTracker:
         self.recent_cache_retrieval = response.usage.cache_read_input_tokens
         self.recent_input = response.usage.input_tokens
         self.recent_output = response.usage.output_tokens
-
+        
         self.total_cache_creation += self.recent_cache_creation
         self.total_cache_retrieval += self.recent_cache_retrieval
         self.total_input += self.recent_input
@@ -565,43 +566,35 @@ class TokenTracker:
 
     def display(self):
         """Display recent and total token usage as HTML."""
-        try:
-            # Construct HTML for Recent Token Usage
-            recent_html = f'''
-            <div class="token-section">
-                <h3 class="yellow">Recent Token Usage 📊</h3>
-                <p><strong class="yellow">Recent Cache Creation Tokens:</strong> {self.recent_cache_creation:,}</p>
-                <p><strong class="yellow">Recent Cache Retrieval Tokens:</strong> {self.recent_cache_retrieval:,}</p>
-                <p><strong class="yellow">Recent Input Tokens:</strong> {self.recent_input:,}</p>
-                <p><strong class="yellow">Recent Output Tokens:</strong> {self.recent_output:,}</p>
-                <p><strong class="yellow">Recent Tokens Used:</strong> {self.recent_cache_creation + self.recent_cache_retrieval + self.recent_input + self.recent_output:,}</p>
-            </div>
-            '''
+        # Construct HTML for Recent Token Usage
+        recent_html = f'''
+        <div class="token-section">
+            <h3 class="yellow">Recent Token Usage 📊</h3>
+            <p><strong class="yellow">Recent Cache Creation Tokens:</strong> {self.recent_cache_creation:,}</p>
+            <p><strong class="yellow">Recent Cache Retrieval Tokens:</strong> {self.recent_cache_retrieval:,}</p>
+            <p><strong class="yellow">Recent Input Tokens:</strong> {self.recent_input:,}</p>
+            <p><strong class="yellow">Recent Output Tokens:</strong> {self.recent_output:,}</p>
+            <p><strong class="yellow">Recent Tokens Used:</strong> {self.recent_cache_creation + self.recent_cache_retrieval + self.recent_input + self.recent_output:,}</p>
+        </div>
+        '''
 
-            # Construct HTML for Total Token Usage
-            total_html = f'''
-            <div class="token-section">
-                <h3 class="yellow">Total Token Usage 📈</h3>
-                <p><strong class="yellow">Total Cache Creation Tokens:</strong> {self.total_cache_creation:,}</p>
-                <p><strong class="yellow">Total Cache Retrieval Tokens:</strong> {self.total_cache_retrieval:,}</p>
-                <p><strong class="yellow">Total Input Tokens:</strong> {self.total_input:,}</p>
-                <p><strong class="yellow">Total Output Tokens:</strong> {self.total_output:,}</p>
-                <p><strong class="yellow">Total Tokens Used:</strong> {self.total_cache_creation + self.total_cache_retrieval + self.total_input + self.total_output:,}</p>
-            </div>
-            '''
+        # Construct HTML for Total Token Usage
+        total_html = f'''
+        <div class="token-section">
+            <h3 class="yellow">Total Token Usage 📈</h3>
+            <p><strong class="yellow">Total Cache Creation Tokens:</strong> {self.total_cache_creation:,}</p>
+            <p><strong class="yellow">Total Cache Retrieval Tokens:</strong> {self.total_cache_retrieval:,}</p>
+            <p><strong class="yellow">Total Input Tokens:</strong> {self.total_input:,}</p>
+            <p><strong class="yellow">Total Output Tokens:</strong> {self.total_output:,}</p>
+            <p><strong class="yellow">Total Tokens Used:</strong> {self.total_cache_creation + self.total_cache_retrieval + self.total_input + self.total_output:,}</p>
+        </div>
+        '''
 
-            # Combine both sections
-            combined_html = recent_html + total_html
+        # Combine both sections
+        combined_html = recent_html + total_html
 
-            # Remove internal line breaks to prevent SSE issues
-            combined_html = combined_html.replace('\n', ' ').replace('\r', ' ')
-
-            # Send the combined HTML to the output buffer
-            write_to_buffer(combined_html)
-
-        except Exception as e:
-            error_message = html.escape(f"Error during token tracker display: {str(e)}")
-            write_to_buffer(f"<div class='error red'>{error_message}</div>")
+        # Send the combined HTML to the output buffer
+        write_to_buffer(combined_html)
 # --- JOURNALING ---
 JOURNAL_MODEL = "claude-3-5-haiku-latest"
 SUMMARY_MODEL = "claude-3-5-sonnet-latest"
@@ -624,94 +617,7 @@ def _extract_text_from_content(content: Any) -> str:
         return " ".join(text_parts)
     return ""
 
-def format_message_to_html(msg: BetaMessageParam) -> str:
-    """
-    Format a single message into an HTML-formatted string.
 
-    Args:
-        msg (BetaMessageParam): A message dictionary containing 'role' and 'content'
-
-    Returns:
-        str: HTML-formatted string for the message
-    """
-    try:
-        role = msg['role'].lower()
-
-        # Determine the message class and header based on role
-        if role == 'user':
-            message_class = 'user-message'
-            header_html = '<strong class="green">User:</strong><br>'
-        elif role == 'assistant':
-            message_class = 'assistant-message'
-            header_html = '<strong class="blue">Assistant:</strong><br>'
-        else:
-            message_class = 'unknown-role'
-            header_html = f'<strong>{html.escape(role.upper())}:</strong><br>'
-
-        # Start the message div
-        html_parts = [f'<div class="{message_class}">', header_html]
-
-        content = msg.get('content', '')
-        if isinstance(content, list):
-            for content_block in content:
-                if isinstance(content_block, dict):
-                    block_type = content_block.get("type")
-
-                    if block_type == "tool_result":
-                        tool_id = html.escape(content_block.get('name', 'unknown'))
-                        html_parts.append(f'<div class="tool-use"><strong>Tool Result [ID: {tool_id}]:</strong></div>')
-
-                        for item in content_block.get("content", []):
-                            item_type = item.get("type")
-                            if item_type == "text":
-                                text = html.escape(item.get("text", "")).replace('\n', ' ')
-                                html_parts.append(f'<div class="tool-output green">Text: {text}</div>')
-                            elif item_type == "image":
-                                # Placeholder for image rendering
-                                html_parts.append('<div class="tool-output"><em>Image Source: base64 source too big</em></div>')
-
-                    elif block_type == "tool_use":
-                        tool_name = html.escape(content_block.get('name', 'unknown'))
-                        html_parts.append(f'<div class="tool-use"><strong>Using tool: {tool_name}</strong></div>')
-
-                        inputs = content_block.get('input', {})
-                        if isinstance(inputs, dict):
-                            html_parts.append('<div class="tool-input">')
-                            for key, value in inputs.items():
-                                # Truncate long inputs if necessary
-                                if isinstance(value, str) and len(value) > 100:
-                                    value = html.escape(value[:100] + '...')
-                                else:
-                                    value = html.escape(str(value))
-                                html_parts.append(f'<div>{key}: {value}</div>')
-                            html_parts.append('</div>')
-
-                    else:
-                        for key, value in content_block.items():
-                            key_escaped = html.escape(str(key))
-                            value_escaped = html.escape(str(value)).replace('\n', ' ')
-                            html_parts.append(f'<div class="{key_escaped}">{key_escaped}: {value_escaped}</div>')
-                else:
-                    # If content_block is not a dict
-                    content_escaped = html.escape(str(content_block)).replace('\n', ' ')
-                    html_parts.append(f'<div>{content_escaped}</div>')
-        else:
-            if isinstance(content, str):
-                content_escaped = html.escape(content).replace('\n', ' ')
-                html_parts.append(f'<div>{content_escaped}</div>')
-
-        # Add a separator
-        html_parts.append('<hr>')  # Separates messages visually
-        html_parts.append('</div>')  # Closes the message div
-
-        # Combine all parts into a single HTML string
-        html_content = ''.join(html_parts)
-        return html_content
-
-    except Exception as e:
-        # Return the error as an HTML-formatted string
-        error_message = html.escape(f"Error during formatting: {str(e)}")
-        return f"<div class='error red'>{error_message}</div>"
         
 def truncate_message_content(content: Any, max_length: int = 9250000) -> Any:
     """Truncate message content while preserving structure."""
@@ -737,7 +643,6 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             GetExpertOpinionTool(),
             ComputerTool(),
             WebNavigatorTool(),
-            ProjectSetupTool()
         )
         system = [BetaTextBlockParam(type="text", text=SYSTEM_PROMPT)]
         output_manager = OutputManager()
@@ -758,21 +663,21 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
         while running:
             print(i)
-            write_to_buffer(f"<div class='iteration'><strong class='yellow'>Iteration {i}</strong> 🔄</div>")
+            write_to_buffer(f"\n[bold yellow]Iteration {i}[/bold yellow] 🔄")
             betas = [COMPUTER_USE_BETA_FLAG, PROMPT_CACHING_BETA_FLAG]
             image_truncation_threshold = 1
             only_n_most_recent_images = 2
-            i += 1
+            i+=1
             if enable_prompt_caching:
                 _inject_prompt_caching(messages)
                 image_truncation_threshold = 1
-                system = [
-                    {
-                        "type": "text",
-                        "text": SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"}
-                    },
-                ]
+                system=[
+                            {
+                                "type": "text",
+                                "text": SYSTEM_PROMPT,
+                                "cache_control": {"type": "ephemeral"}
+                            },
+                        ]
 
             if only_n_most_recent_images:
                 _maybe_filter_to_n_most_recent_images(
@@ -799,7 +704,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 )
 
                 token_tracker.update(response)
-                # token_tracker.display()  # Display token usage
+                # token_tracker.display()
 
                 ic(f"Response: {response}")
                 response_params = []
@@ -816,52 +721,59 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 messages.append({"role": "assistant", "content": response_params})
 
                 write_messages_to_file(messages, MESSAGES_FILE)
-
-                # Get new messages since the last iteration
-                new_messages = messages[previous_message_count:]
+                # conversation_html = output_manager.format_recent_conversation(messages)
+                # conversation_html = format_messages_to_string(messages)
                 
-                # Format and send each new message individually
-                for new_msg in new_messages:
-                    conversation_html = format_message_to_html(new_msg)
-                    write_to_buffer(conversation_html)
-
+                # Get new messages since the last iteration
+                new_messages = messages[-2:]
+                conversation_html = format_messages_to_html(messages)
+                
+                write_to_buffer(conversation_html)
+                print(conversation_html)
+                
                 # Update previous message count
                 previous_message_count = len(messages)
 
-                print(conversation_html)
+
                 tool_result_content: List[BetaToolResultBlockParam] = []
                 for content_block in response_params:
+                    # output_manager.format_content_block(content_block)
                     if content_block["type"] == "tool_use":
                         ic(f"Tool Use: {response_params}")
                         result = await tool_collection.run(
                             name=content_block["name"],
                             tool_input=content_block["input"],
                         )
-                        ic.configureOutput(includeContext=True, outputFunction=write_to_file, argToStringFunction=repr)
+                        ic.configureOutput(includeContext=True, outputFunction=write_to_file,argToStringFunction=repr)
                         ic(content_block)
+                        # output_manager.format
+                        # _tool_output(result, content_block["name"])
                         tool_result = _make_api_tool_result(result, content_block["id"])
                         ic(tool_result)
                         tool_result_content.append(tool_result)
-                
                 if not tool_result_content and len(messages) > 4:
-                    write_to_buffer("<div class='awaiting-input'><strong class='yellow'>Awaiting User Input</strong> ⌨️</div>")
+                    write_to_buffer("\n[bold yellow]Awaiting User Input[/bold yellow] ⌨️")
                     task = Prompt.ask("What would you like to do next? Enter 'no' to exit")
                     if task.lower() in ["no", "n"]:
                         running = False
                     messages.append({"role": "user", "content": task})
                 else:
                     messages.append({"role": "user", "content": tool_result_content})
+                # write_to_buffer(f"Creating journal entry #{journal_entry_count}")
+                # write_to_buffer(f"There are {len(messages)} messages")
+
 
             except UnicodeEncodeError as ue:
                 ic(f"UnicodeEncodeError: {ue}")
-                write_to_buffer(f"<div class='error red'>Unicode encoding error: {ue}</div>")
-                write_to_buffer(f"<div class='error red'>ascii: {ue.args[1].encode('ascii', errors='replace').decode('ascii')}</div>")
+                write_to_buffer(f"Unicode encoding error: {ue}")
+                write_to_buffer(f"ascii: {ue.args[1].encode('ascii', errors='replace').decode('ascii')}")
                 break
             except Exception as e:
                 ic(f"Error in sampling loop: {str(e).encode('ascii', errors='replace').decode('ascii')}")
                 ic(f"The error occurred at the following message: {messages[-1]} and line: {e.__traceback__.tb_lineno}")
                 ic(e.__traceback__.tb_frame.f_locals)
                 raise
+        # token_tracker.display()
         return messages
 
     except Exception as e:
@@ -871,6 +783,8 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
         ic(e.__traceback__.tb_frame)
         ic(f"Error initializing sampling loop: {str(e)}")
         raise
+
+
 def _inject_prompt_caching(messages: List[BetaMessageParam]):
     """Set cache breakpoints for the 3 most recent turns."""
     breakpoints_remaining = 2

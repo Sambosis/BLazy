@@ -1,6 +1,7 @@
 ## base.py
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, fields, replace
+from email import message
 from typing import Any, Optional, Dict
 
 
@@ -52,12 +53,12 @@ class ToolResult:
     error: Optional[str] = None
     base64_image: Optional[str] = None
     system: Optional[str] = None
-
+    message: Optional[str] = None
     def __bool__(self):
         return any(getattr(self, field.name) for field in fields(self))
 
     def __add__(self, other: "ToolResult"):
-        def combine_fields(
+        def _fields(
             field: str | None, other_field: str | None, concatenate: bool = True
         ):
             if field and other_field:
@@ -92,6 +93,7 @@ class ToolFailure(ToolResult):
 class ToolError(Exception):
     """Raised when a tool encounters an error."""
     message: str
+    output: Optional[str] = None
 
     def __init__(self, message: str):
         object.__setattr__(self, 'message', message)

@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Literal, Optional, List
 from pathlib import Path
 from .base import ToolResult, BaseAnthropicTool
@@ -6,6 +7,12 @@ import subprocess
 from icecream import ic
 from rich import print as rr
 import json
+from pydantic import BaseModel
+
+class ProjectCommand(str, Enum):
+    SETUP_PROJECT = "setup_project"
+    ADD_DEPENDENCIES = "add_additional_depends"
+    RUN_APP = "run_app"
 
 class ProjectSetupTool(BaseAnthropicTool):
     """
@@ -14,7 +21,7 @@ class ProjectSetupTool(BaseAnthropicTool):
 
     name: Literal["project_setup"] = "project_setup"
     api_type: Literal["custom"] = "custom"
-    description: str = "A tool that sets up Python projects with virtual environments, installs packages, and runs Python scripts."
+    description: str = "A tool for Python project management: setup projects, add dependencies, and run applications."
 
     def to_params(self) -> dict:
         return {
@@ -24,6 +31,11 @@ class ProjectSetupTool(BaseAnthropicTool):
             "input_schema": {
                 "type": "object",
                 "properties": {
+                    "command": {
+                        "type": "string",
+                        "enum": [cmd.value for cmd in ProjectCommand],
+                        "description": "Command to execute: setup_project, add_additional_depends, or run_app"
+                    },
                     "packages": {
                         "type": "array",
                         "items": {"type": "string"},
@@ -33,12 +45,12 @@ class ProjectSetupTool(BaseAnthropicTool):
                         "type": "string",
                         "description": "Path to the project directory"
                     },
-                    "script_path": {
+                    "python_filename": {
                         "type": "string",
-                        "description": "Optional path to a Python script to run after setup"
+                        "description": "the name of the python file to run"
                     }
                 },
-                "required": ["packages", "project_path"]
+                "required": ["command", "project_path"]
             }
         }
 
@@ -63,87 +75,124 @@ class ProjectSetupTool(BaseAnthropicTool):
         """Format the output data as a readable string"""
         output_lines = []
         
+        # Add command type
+        output_lines.append(f"Command: {data['command']}")
+        
         # Add status
         output_lines.append(f"Status: {data['status']}")
         
         # Add project path
         output_lines.append(f"Project Path: {data['project_path']}")
         
-        # Add packages
-        output_lines.append("Packages Installed:")
-        for package in data['packages_installed']:
-            output_lines.append(f"  - {package}")
+        # Add packages if present
+        if 'packages_installed' in data:
+            output_lines.append("Packages Installed:")
+            for package in data['packages_installed']:
+                output_lines.append(f"  - {package}")
         
-        # Add script output if present
-        if 'script_output' in data and data['script_output']:
-            output_lines.append("\nScript Output:")
-            output_lines.append(data['script_output'])
+        # Add run output if present
+        if 'run_output' in data and data['run_output']:
+            output_lines.append("\nApplication Output:")
+            output_lines.append(data['run_output'])
         
-        if 'script_errors' in data and data['script_errors']:
-            output_lines.append("\nScript Errors:")
-            output_lines.append(data['script_errors'])
-        
-        if 'script_error' in data:
-            output_lines.append(f"\nScript Error: {data['script_error']}")
+        if 'errors' in data and data['errors']:
+            output_lines.append("\nErrors:")
+            output_lines.append(data['errors'])
         
         # Join all lines with newlines
         return "\n".join(output_lines)
 
+    async def setup_project(self, project_path: Path, packages: List[str]) -> dict:
+        """Sets up a new Python project"""
+        project_path.mkdir(parents=True, exist_ok=True)
+        os.chdir(project_path)
+
+        # Setup virtual environment
+        ic("Creating virtual environment...")
+        self.run_command("uv venv")
+        try:
+            self.run_command("uv init")
+        except:
+            pass
+
+        # Install initial packages
+        ic("Installing packages...")
+        for package in packages:
+            self.run_command(f"uv add {package}")
+
+        return {
+            "command": "setup_project",
+            "status": "success",
+            "project_path": str(project_path),
+            "packages_installed": packages
+        }
+
+    async def add_dependencies(self, project_path: Path, packages: List[str]) -> dict:
+        """Adds additional dependencies to an existing project"""
+        os.chdir(project_path)
+        
+        ic("Installing additional packages...")
+        for package in packages:
+            self.run_command(f"uv add {package}")
+
+        return {
+            "command": "add_additional_depends",
+            "status": "success",
+            "project_path": str(project_path),
+            "packages_installed": packages
+        }
+
+    async def run_app(self, project_path: Path, filename: str) -> dict:
+        """Runs the application using uv run"""
+        os.chdir(project_path)
+        
+        try:
+            result = subprocess.run(
+                ["uv", "run", filename],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            return {
+                "command": "run_app",
+                "status": "success",
+                "project_path": str(project_path),
+                "run_output": result.stdout,
+                "errors": result.stderr
+            }
+        except subprocess.CalledProcessError as e:
+            return {
+                "command": "run_app",
+                "status": "error",
+                "project_path": str(project_path),
+                "errors": f"Failed to run app: {str(e)}\nOutput: {e.stdout}\nError: {e.stderr}"
+            }
+
     async def __call__(
         self,
         *,
+        command: ProjectCommand,
+        project_path: str,
         packages: List[str] = ["flask", "pandas", "flask-wtf", "python-dotenv"],
-        project_path: str = str(Path.cwd()),
-        script_path: Optional[str] = None,
+        python_filename: str = "app.py",
         **kwargs,
     ) -> ToolResult:
         """
-        Sets up a Python project and optionally runs a script.
+        Executes the specified command for project management.
         """
         try:
-            # Convert path strings to Path objects
+            # Convert path string to Path object
             project_path = Path(project_path)
             
-            ic(f"Setting up project in {project_path}")
-            
-            # Create and setup project
-            project_path.mkdir(parents=True, exist_ok=True)
-            os.chdir(project_path)
-
-            # Setup virtual environment
-            ic("Creating virtual environment...")
-            self.run_command("uv venv")
-            try:
-                self.run_command("uv init")
-            except:
-                pass
-
-            # Install packages
-            ic("Installing packages...")
-            for package in packages:
-                self.run_command(f"uv add {package}")
-
-            result_data = {
-                "status": "success",
-                "project_path": str(project_path),
-                "packages_installed": packages
-            }
-
-            # Run script if provided
-            if script_path:
-                script_path = Path(script_path)
-                ic(f"Running script: {script_path}")
-                try:
-                    script_result = subprocess.run(
-                        ["uv", "run", str(script_path)],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                    result_data["script_output"] = script_result.stdout
-                    result_data["script_errors"] = script_result.stderr
-                except Exception as e:
-                    result_data["script_error"] = str(e)
+            # Execute the appropriate command
+            if command == ProjectCommand.SETUP_PROJECT:
+                result_data = await self.setup_project(project_path, packages)
+            elif command == ProjectCommand.ADD_DEPENDENCIES:
+                result_data = await self.add_dependencies(project_path, packages)
+            elif command == ProjectCommand.RUN_APP:
+                result_data = await self.run_app(project_path, python_filename)
+            else:
+                return ToolResult(error=f"Unknown command: {command}")
 
             # Convert result_data to formatted string
             formatted_output = self.format_output(result_data)
@@ -151,6 +200,6 @@ class ProjectSetupTool(BaseAnthropicTool):
 
         except Exception as e:
             ic(e)
-            error_msg = f"Failed to setup project: {str(e)}"
-            rr(f"Project setup error: {error_msg}")
+            error_msg = f"Failed to execute {command}: {str(e)}"
+            rr(f"Error: {error_msg}")
             return ToolResult(error=error_msg)

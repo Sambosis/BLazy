@@ -44,4 +44,6 @@ class ToolCollection:
             return await tool(**tool_input)
         except ToolError as e:
             return ToolFailure(error=e.message)
+    def get_tool_names_as_string(self) -> str:
+        return ", ".join(self.tool_map.keys())
 #"C:/repo/code_test/code_context_manager.py"

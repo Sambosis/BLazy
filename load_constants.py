@@ -27,8 +27,12 @@ JOURNAL_SYSTEM_PROMPT_FILE = JOURNAL_DIR / "journal_system_prompt.md"
 SYSTEM_PROMPT_DIR = Path(".")
 SYSTEM_PROMPT_FILE = SYSTEM_PROMPT_DIR / "system_prompt.md"
 # Add near the top with other Path definitions
-PROJECT_DIR = Path("C:/repo/default")  # Default value
+PROJECT_DIR = Path("C:/repo/")  # Default value
 
+global PROMPT_NAME
+PROMPT_NAME = None
+
+HOME = Path.home()
 def update_project_dir(new_dir):
     global PROJECT_DIR
     PROJECT_DIR = new_dir
@@ -97,5 +101,33 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
         f.write('\n'.join(formatted_lines))
         f.write('\n' + '-' * 80 + '\n')
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
+
+def get_workspace_dir():
+    return HOME / f"{PROMPT_NAME}/workspace"
+
+def get_logs_dir():
+    return HOME / f"{PROMPT_NAME}/logs"
+
+def update_paths(new_prompt_name):
+    logs_dir = get_logs_dir()
+    global PROMPT_NAME
+    PROMPT_NAME = new_prompt_name
+    return {
+        'ICECREAM_OUTPUT_FILE': logs_dir / "debug_log.json",
+        'JOURNAL_FILE': logs_dir / "journal/journal.log",
+        'JOURNAL_ARCHIVE_FILE': logs_dir / "journal/journal.log.archive",
+        'SUMMARY_FILE': logs_dir / "summaries/summary.md",
+        'SYSTEM_PROMPT_FILE': logs_dir / "prompts/system_prompt.md",
+        'JOURNAL_SYSTEM_PROMPT_FILE': logs_dir / "prompts/journal_prompt.md"
+    }
+
+def load_system_prompts():
+    paths = update_paths()
+    with open(paths['SYSTEM_PROMPT_FILE'], 'r', encoding="utf-8") as f:
+        SYSTEM_PROMPT = f.read()
+    with open(paths['JOURNAL_SYSTEM_PROMPT_FILE'], 'r', encoding="utf-8") as f:
+        JOURNAL_SYSTEM_PROMPT = f.read()
+    return SYSTEM_PROMPT, JOURNAL_SYSTEM_PROMPT
+
 
 
