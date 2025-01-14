@@ -7,7 +7,7 @@ from pathlib import Path
 def create_project():
     try:
         # Define the project directory path
-        project_path = Path(r'C:\repo\testsite2')
+        project_path = Path.cwd() / 'repo' / 'testsite2'
         
         # Create the project directory (equivalent to mkdir -p)
         project_path.mkdir(parents=True, exist_ok=True)

@@ -142,7 +142,7 @@ install()
 MAX_SUMMARY_MESSAGES = 40
 MAX_SUMMARY_TOKENS = 8000
 ICECREAM_OUTPUT_FILE = "debug_log.json"
-JOURNAL_FILE = r"C:\mygit\compuse\computer_use_demo\journal\journal.log"
+JOURNAL_FILE = Path.cwd() / "journal/journal.log"
 JOURNAL_ARCHIVE_FILE = "journal/journal.log.archive"
 
 HOME = Path.home()
@@ -197,7 +197,7 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
         f.write('\n' + '-' * 80 + '\n')
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
-with open(Path(r"C:\mygit\compuse\computer_use_demo\system_prompt.md"), 'r', encoding="utf-8") as f:
+with open(Path.cwd() / "system_prompt.md", 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
 class OutputManager:
@@ -299,7 +299,7 @@ class TokenTracker:
 JOURNAL_MODEL = "claude-3-5-haiku-latest"
 SUMMARY_MODEL = "claude-3-5-sonnet-latest"
 JOURNAL_MAX_TOKENS = 1500
-JOURNAL_SYSTEM_PROMPT_FILE = r"C:\mygit\compuse\computer_use_demo\journal\journal.log"
+JOURNAL_SYSTEM_PROMPT_FILE = Path.cwd() / "journal/journal.log"
 with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     JOURNAL_SYSTEM_PROMPT = f.read()
 
@@ -674,7 +674,7 @@ async def run_sampling_loop(task: str, display: AgentDisplay, output_manager: Ou
 
 async def main_async():
     """Async main function with proper error handling."""
-    prompts_dir = Path(r"C:\mygit\compuse\computer_use_demo\prompts")
+    prompts_dir = Path.cwd() / "prompts"
     prompt_files = list(prompts_dir.glob("*.md"))
 
     rr("\n[bold yellow]Available Prompts:[/bold yellow]")

@@ -316,7 +316,7 @@ def format_messages_to_html(messages):
 def rr(strin):
     write_to_buffer(strin)
 # --- LOAD SYSTEM PROMPT ---
-with open(Path(r"C:\mygit\compuse\computer_use_demo\system_prompt.md"), 'r', encoding="utf-8") as f:
+with open(Path.cwd() / "system_prompt.md", 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
 class OutputManager:

@@ -6,7 +6,7 @@ import subprocess
 def create_project_environment():
     try:
         # Create the project directory
-        project_path = pathlib.Path(r"C:\repo\testsite2")
+        project_path = pathlib.Path.cwd() / 'repo' / 'testsite2'
         
         # Create directory if it doesn't exist
         project_path.mkdir(parents=True, exist_ok=True)

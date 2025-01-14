@@ -1,7 +1,7 @@
 from pathlib import Path
 
 # Define the base directory
-base_dir = Path(r'C:\repo\testsite2')
+base_dir = Path.cwd() / 'repo' / 'testsite2'
 
 # Create directories
 directories = [
