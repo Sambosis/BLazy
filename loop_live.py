@@ -48,9 +48,9 @@ install()
 
 MAX_SUMMARY_MESSAGES = 40
 MAX_SUMMARY_TOKENS = 8000
-ICECREAM_OUTPUT_FILE = "debug_log.json"
-JOURNAL_FILE = r"C:\mygit\compuse\computer_use_demo\journal\journal.log"
-JOURNAL_ARCHIVE_FILE = "journal/journal.log.archive"
+ICECREAM_OUTPUT_FILE = Path.cwd() / "debug_log.json"
+JOURNAL_FILE = Path.cwd() / "journal" / "journal.log"
+JOURNAL_ARCHIVE_FILE = Path.cwd() / "journal" / "journal.log.archive"
 
 HOME = Path.home()
 PROMPT_NAME = None
@@ -190,7 +190,7 @@ class TokenTracker:
 JOURNAL_MODEL = "claude-3-5-haiku-latest"
 SUMMARY_MODEL = "claude-3-5-sonnet-latest"
 JOURNAL_MAX_TOKENS = 1500
-JOURNAL_SYSTEM_PROMPT_FILE = r"C:\mygit\compuse\computer_use_demo\journal\journal.log"
+JOURNAL_SYSTEM_PROMPT_FILE = Path.cwd() / "journal" / "journal_system_prompt.md"
 with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     JOURNAL_SYSTEM_PROMPT = f.read()
 
