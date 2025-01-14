@@ -14,7 +14,7 @@ MAX_SUMMARY_MESSAGES = 20
 MAX_SUMMARY_TOKENS = 6000
 WORKER_DIR = Path.cwd()
 ICECREAM_OUTPUT_FILE =  WORKER_DIR / "debug_log.json"
-JOURNAL_DIR = Path("journal")
+JOURNAL_DIR = Path.cwd() / "journal"
 JOURNAL_FILE = JOURNAL_DIR / "journal.log"
 JOURNAL_ARCHIVE_FILE = JOURNAL_DIR / "journal_archive.log"
 COMPUTER_USE_BETA_FLAG = "computer-use-2024-10-22"
@@ -24,7 +24,7 @@ SUMMARY_MODEL = "claude-3-5-haiku-latest"
 JOURNAL_MAX_TOKENS = 4000
 MAIN_MODEL = "claude-3-5-sonnet-latest"
 JOURNAL_SYSTEM_PROMPT_FILE = JOURNAL_DIR / "journal_system_prompt.md"
-SYSTEM_PROMPT_DIR = Path(".")
+SYSTEM_PROMPT_DIR = Path.cwd()
 SYSTEM_PROMPT_FILE = SYSTEM_PROMPT_DIR / "system_prompt.md"
 # Add near the top with other Path definitions
 PROJECT_DIR = Path.cwd()  # Default value
@@ -128,6 +128,3 @@ def load_system_prompts():
     with open(paths['JOURNAL_SYSTEM_PROMPT_FILE'], 'r', encoding="utf-8") as f:
         JOURNAL_SYSTEM_PROMPT = f.read()
     return SYSTEM_PROMPT, JOURNAL_SYSTEM_PROMPT
-
-
-
