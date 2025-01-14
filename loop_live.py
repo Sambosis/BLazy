@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, cast
 
 import ftfy
-import pyautogui
 from anthropic import Anthropic, APIResponse
 from anthropic.types.beta import (
     BetaCacheControlEphemeralParam,
@@ -24,7 +23,6 @@ from rich.prompt import Prompt
 
 from tools import (
     BashTool,
-    ComputerTool,
     EditTool,
     GetExpertOpinionTool,
     ToolCollection,
@@ -271,7 +269,6 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             BashTool(display=display),
             EditTool(),
             GetExpertOpinionTool(),
-            ComputerTool(),
             WebNavigatorTool(),
             ProjectSetupTool()
         )
