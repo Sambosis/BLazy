@@ -1,0 +1,6 @@
+{
+  "tasks": {
+    "build": "pip install uv",
+    "launch": "uv run loop_live.py"
+  }
+}
