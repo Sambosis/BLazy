@@ -27,7 +27,7 @@ JOURNAL_SYSTEM_PROMPT_FILE = JOURNAL_DIR / "journal_system_prompt.md"
 SYSTEM_PROMPT_DIR = Path(".")
 SYSTEM_PROMPT_FILE = SYSTEM_PROMPT_DIR / "system_prompt.md"
 # Add near the top with other Path definitions
-PROJECT_DIR = Path("C:/repo/")  # Default value
+PROJECT_DIR = Path.cwd()  # Default value
 
 global PROMPT_NAME
 PROMPT_NAME = None

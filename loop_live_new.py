@@ -349,7 +349,7 @@ def rr(strin):
 
 # --- LOAD SYSTEM PROMPT ---
 with open(
-    Path(r"C:\mygit\compuse\computer_use_demo\system_prompt.md"), "r", encoding="utf-8"
+    CWD / "system_prompt.md", "r", encoding="utf-8"
 ) as f:
     SYSTEM_PROMPT = f.read()
 

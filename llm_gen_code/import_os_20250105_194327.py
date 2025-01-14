@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 # Define the base directory
-base_dir = Path("C:/repo/testsite2")
+base_dir = Path.cwd() / 'repo' / 'testsite2'
 
 # Create static subdirectories
 static_subdirs = ['css', 'js', 'images', 'uploads']
