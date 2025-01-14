@@ -19,7 +19,7 @@ from icecream import ic
 
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
-PROMPT_FILE = Path(r"C:\mygit\compuse\computer_use_demo\tools\bash.md")
+PROMPT_FILE = Path.cwd() / "tools" / "bash.md"
 
 
 def read_prompt_from_file(file_path: str, bash_command: str) -> str:

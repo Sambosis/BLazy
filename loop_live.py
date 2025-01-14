@@ -104,7 +104,7 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
         f.write('\n' + '-' * 80 + '\n')
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
-with open(Path(r"C:\mygit\compuse\computer_use_demo\system_prompt.md"), 'r', encoding="utf-8") as f:
+with open(Path.cwd() / "system_prompt.md", 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
 
