@@ -15,6 +15,8 @@ from rich import print as rr
 import datetime
 import json
 from load_constants import WORKER_DIR, write_to_file, ICECREAM_OUTPUT_FILE
+from config import REPO_DIR
+
 # Reconfigure stdout to use UTF-8 encoding
 sys.stdout.reconfigure(encoding='utf-8')
 # include the context for the icecream debugger

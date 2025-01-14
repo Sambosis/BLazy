@@ -8,6 +8,7 @@ import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, Set, Optional, List, Tuple
+from config import REPO_DIR
 
 @dataclass
 class CodeFile:
@@ -285,7 +286,7 @@ class CodeContextManager:
         """
         Replaces the entire content of the specified file.
         """
-        file_path = os.path.join('code_files', filename)
+        file_path = os.path.join(REPO_DIR, filename)
         if os.path.exists(file_path):
             replace_file(file_path, new_content)
             self.update_file(
@@ -308,7 +309,7 @@ class CodeContextManager:
         """
         Adds new code to an existing file. Optionally, specify the function name for better placement.
         """
-        file_path = os.path.join('code_files', filename)
+        file_path = os.path.join(REPO_DIR, filename)
         if not os.path.exists(file_path):
             print(f"File {filename} does not exist. Creating a new one.")
             replace_file(file_path, code_to_add)
