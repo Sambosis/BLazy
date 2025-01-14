@@ -5,6 +5,7 @@ from icecream import ic
 from datetime import datetime
 import json
 from utils.output_manager import OutputManager
+from config import TOP_LEVEL_DIR, REPO_DIR, JOURNAL_DIR, JOURNAL_FILE, JOURNAL_ARCHIVE_FILE, JOURNAL_SYSTEM_PROMPT_FILE, SYSTEM_PROMPT_DIR, SYSTEM_PROMPT_FILE
 
 # Get the directory where this script is located
 
@@ -14,22 +15,16 @@ load_dotenv()
 # Constants
 MAX_SUMMARY_MESSAGES = 20
 MAX_SUMMARY_TOKENS = 6000
-WORKER_DIR = Path.cwd()
+WORKER_DIR = TOP_LEVEL_DIR
 ICECREAM_OUTPUT_FILE =  WORKER_DIR / "debug_log.json"
-JOURNAL_DIR = Path.cwd() / "journal"
-JOURNAL_FILE = JOURNAL_DIR / "journal.log"
-JOURNAL_ARCHIVE_FILE = JOURNAL_DIR / "journal_archive.log"
 COMPUTER_USE_BETA_FLAG = "computer-use-2024-10-22"
 PROMPT_CACHING_BETA_FLAG = "prompt-caching-2024-07-31"
 JOURNAL_MODEL = "claude-3-5-haiku-latest"
 SUMMARY_MODEL = "claude-3-5-haiku-latest"
 JOURNAL_MAX_TOKENS = 4000
 MAIN_MODEL = "claude-3-5-sonnet-latest"
-JOURNAL_SYSTEM_PROMPT_FILE = JOURNAL_DIR / "journal_system_prompt.md"
-SYSTEM_PROMPT_DIR = Path.cwd()
-SYSTEM_PROMPT_FILE = SYSTEM_PROMPT_DIR / "system_prompt.md"
 # Add near the top with other Path definitions
-PROJECT_DIR = Path.cwd()  # Default value
+PROJECT_DIR = TOP_LEVEL_DIR  # Default value
 
 global PROMPT_NAME
 PROMPT_NAME = None

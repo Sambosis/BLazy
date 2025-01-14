@@ -13,9 +13,9 @@ from anthropic import Anthropic
 
 from .base import BaseAnthropicTool, ToolError, ToolResult
 from utils.agent_display import AgentDisplay  # Add this line
-from load_constants import PROJECT_DIR
 from load_constants import WORKER_DIR, ICECREAM_OUTPUT_FILE, write_to_file
 from icecream import ic
+from config import REPO_DIR
 
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
@@ -46,7 +46,7 @@ def read_prompt_from_file(file_path: str, bash_command: str) -> str:
     5. If the commands involve file or directory operations (like setting up directories or copying files), include error handling (e.g., checking if a directory already exists before creating it).
     6. Your output must be labeled as “Python Script:” followed by a code block containing the full Python code.
     7. If the input Bash command or 'uv' command sequence is invalid or unsupported, return a short error description.
-    8. The project directory is {PROJECT_DIR} plus the name of the project and that you should use the absolute path at all times to avoid conflicts. 
+    8. The project directory is {REPO_DIR} plus the name of the project and that you should use the absolute path at all times to avoid conflicts. 
     Example usage of 'uv' commands and their equivalent Python script:
 
     Input (Bash commands):
@@ -77,14 +77,14 @@ def read_prompt_from_file(file_path: str, bash_command: str) -> str:
     # Create project directory
     try:
         project_dir.mkdir(exist_ok=True)
-        print(f"Created project directory: {PROJECT_DIR}")
+        print(f"Created project directory: {REPO_DIR}")
     except Exception as e:
         print(f"Error creating project directory: {{e}}")
 
     # Change to project directory
     try:
         os.chdir(project_dir)
-        print(f"Changed directory to: {PROJECT_DIR}")
+        print(f"Changed directory to: {REPO_DIR}")
     except Exception as e:
         print(f"Error changing directory: {{e}}")
 
@@ -106,7 +106,7 @@ def read_prompt_from_file(file_path: str, bash_command: str) -> str:
     for package in packages:
         run_command(f"uv add {{package}}")
 
-    print(f"\\nProject setup complete in {PROJECT_DIR}")
+    print(f"\\nProject setup complete in {REPO_DIR}")
     print("To activate the virtual environment, run:")
     print(f"{{activate_cmd}}")
 
