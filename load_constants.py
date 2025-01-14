@@ -4,6 +4,8 @@ import os
 from icecream import ic
 from datetime import datetime
 import json
+from utils.output_manager import OutputManager
+
 # Get the directory where this script is located
 
 # Load environment variables
@@ -128,3 +130,5 @@ def load_system_prompts():
     with open(paths['JOURNAL_SYSTEM_PROMPT_FILE'], 'r', encoding="utf-8") as f:
         JOURNAL_SYSTEM_PROMPT = f.read()
     return SYSTEM_PROMPT, JOURNAL_SYSTEM_PROMPT
+
+output_manager = OutputManager()
