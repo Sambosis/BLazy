@@ -12,7 +12,7 @@ from icecream import ic
 from .agent_display import AgentDisplay  # Relative import for AgentDisplay
 from tools import ToolResult # for typing results
 from load_constants import get_logs_dir # Import for image storage
-class OutputManager:
+class FileStorageManager:
     def __init__(self, display: AgentDisplay, image_dir: Optional[Path] = None):
         self.image_dir = image_dir or get_logs_dir() / 'computer_tool_images'
         self.image_dir.mkdir(parents=True, exist_ok=True)
