@@ -11,6 +11,7 @@ class Resolution(TypedDict):
     width: int
     height: int
 from rich import print as rr
+from rich.prompt import Prompt
 
 class ScalingSource(StrEnum):
     COMPUTER = "computer"
