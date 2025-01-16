@@ -1,9 +1,9 @@
 import openai
 import json
 import os
-from test_navigation_tool import windows_navigate, shortcuts, windows_navigate_function
-from test_edit import edit_file, edit_file_function
-from test_bash import bash_command,bash_command_function
+from windows_navigation import WindowsNavigationTool
+from edit import edit_file, edit_file_function
+from bash import bash_command,bash_command_function
 # from function_schema import windows_navigate_function, edit_file_function, bash_command_function
 from dotenv import load_dotenv
 from rich import print as rr

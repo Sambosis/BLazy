@@ -6,7 +6,7 @@ from typing import Literal, Optional, Dict, Any
 from pathlib import Path
 import json
 import logging
-from .base import BaseAnthropicTool, ToolResult, ToolError
+from base import BaseAnthropicTool, ToolResult, ToolError
 from rich import print as rr
 
 # Configure logging

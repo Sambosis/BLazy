@@ -1,0 +1,1 @@
+There is a file "C:\repo\BAL_Inventory_Q4_2024.xlsx" that has several sheets with data about the inventory counts and usage.  There seem to be many miscounts or errors.  You need to identify the error, give a suggestion for a plausible correct count for the mistakes and calculate the updatedINVENTORY RELATED EXPENSES

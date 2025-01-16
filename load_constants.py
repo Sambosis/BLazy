@@ -4,7 +4,7 @@ import os
 from icecream import ic
 from datetime import datetime
 import json
-from utils.output_manager import OutputManager
+# from utils.output_manager import OutputManager
 from config import TOP_LEVEL_DIR, REPO_DIR, JOURNAL_DIR, JOURNAL_FILE, JOURNAL_ARCHIVE_FILE, JOURNAL_SYSTEM_PROMPT_FILE, SYSTEM_PROMPT_DIR, SYSTEM_PROMPT_FILE
 
 # Get the directory where this script is located
@@ -126,4 +126,4 @@ def load_system_prompts():
         JOURNAL_SYSTEM_PROMPT = f.read()
     return SYSTEM_PROMPT, JOURNAL_SYSTEM_PROMPT
 
-output_manager = OutputManager()
+# output_manager = OutputManager()
