@@ -21,7 +21,7 @@ from icecream import ic, install
 from rich import print as rr
 from rich.prompt import Prompt
 
-from tools import (
+from scripts.tools import (
     BashTool,
     EditTool,
     GetExpertOpinionTool,

@@ -5,12 +5,15 @@ from icecream import ic
 from datetime import datetime
 import json
 from utils.output_manager import OutputManager
-from config import TOP_LEVEL_DIR, REPO_DIR, JOURNAL_DIR, JOURNAL_FILE, JOURNAL_ARCHIVE_FILE, JOURNAL_SYSTEM_PROMPT_FILE, SYSTEM_PROMPT_DIR, SYSTEM_PROMPT_FILE
+from config import TOP_LEVEL_DIR, REPO_DIR, JOURNAL_DIR, JOURNAL_FILE, JOURNAL_ARCHIVE_FILE, JOURNAL_SYSTEM_PROMPT_FILE, SYSTEM_PROMPT_DIR, SYSTEM_PROMPT_FILE, SCRIPTS_DIR, TESTS_DIR
 
 # Get the directory where this script is located
 
-# Load environment variables
-load_dotenv()
+# Load environment variables with error handling
+try:
+    load_dotenv()
+except Exception as e:
+    print(f"Error loading environment variables: {e}")
 
 # Constants
 MAX_SUMMARY_MESSAGES = 20
