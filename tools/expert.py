@@ -184,10 +184,3 @@ Begin your detailed task breakdown below:
             ic(e)
             rr(f"{str(e).encode('ascii', errors='replace').decode('ascii')}")
             return ToolFailure(error="Failed to generate opinion.")
-
-
-
-
-
-
-

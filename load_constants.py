@@ -24,6 +24,10 @@ JOURNAL_SYSTEM_PROMPT_FILE = JOURNAL_DIR / "journal_system_prompt.md"
 SYSTEM_PROMPT_DIR = Path(".")
 SYSTEM_PROMPT_FILE = SYSTEM_PROMPT_DIR / "system_prompt.md"
 
+# Add JOURNAL_SYSTEM_PROMPT and SYSTEM_PROMPT constants
+JOURNAL_SYSTEM_PROMPT = ""
+SYSTEM_PROMPT = ""
+
 # Create necessary directories
 JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
 print(f"Journal directory: {JOURNAL_DIR}")
@@ -44,6 +48,7 @@ except FileNotFoundError:
     SYSTEM_PROMPT = ""
     print(f"Warning: System prompt file not found at {SYSTEM_PROMPT_FILE}")
 
+# Add reload_prompts function to reload system prompts
 def reload_prompts():
     global SYSTEM_PROMPT
     global JOURNAL_SYSTEM_PROMPT
@@ -57,5 +62,4 @@ def reload_prompts():
             JOURNAL_SYSTEM_PROMPT = f.read()
     except FileNotFoundError:
         print(f"Warning: Journal system prompt file not found at {JOURNAL_SYSTEM_PROMPT_FILE}")
-
 

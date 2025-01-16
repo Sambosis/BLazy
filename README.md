@@ -47,6 +47,14 @@ To use BLazy, follow these steps:
 
 3. Follow the prompts and instructions provided by the script to automate your tasks.
 
+## New Features and Updates
+
+The `webstyle` branch has been successfully merged into the `master` branch. This merge includes the following new features and updates:
+
+1. **Web Interface**: A new web interface has been added to provide a more user-friendly way to interact with BLazy.
+2. **Enhanced Logging**: Improved logging capabilities to better track the execution of tasks.
+3. **Bug Fixes**: Various bug fixes and performance improvements.
+
 ## Contribution Guidelines
 
 We welcome contributions to BLazy! To contribute, follow these steps:
