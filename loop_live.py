@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, cast
-
+from config import *
 import ftfy
 from anthropic import Anthropic, APIResponse
 from anthropic.types.beta import (
@@ -19,9 +19,8 @@ from anthropic.types.beta import (
 from dotenv import load_dotenv
 from icecream import ic, install
 from rich import print as rr
-from rich.prompt import Prompt
-
-from scripts.tools import (
+from rich.prompt import Prompt, Confirm
+from tools import (
     BashTool,
     EditTool,
     GetExpertOpinionTool,
@@ -104,7 +103,7 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
         f.write('\n' + '-' * 80 + '\n')
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
-with open(Path.cwd() / "system_prompt.md", 'r', encoding="utf-8") as f:
+with open(SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
 
@@ -331,6 +330,16 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     tools=tool_collection.to_params(),
                     betas=betas,
                 )
+                # add a small pause
+                await asyncio.sleep(0.5)
+                display.live.stop()  # Stop the live display
+                await asyncio.sleep(0.5)
+                rr(_extract_text_from_content(response.content))
+                # Ask user if they are done reviewing the info using rich's Confirm.ask
+                while Confirm.ask("Do you need more time?", default=True):
+                    rr(response)
+
+                display.live.start()  # Restart the live display
                 token_tracker.update(response)
                 token_tracker.display()
 
