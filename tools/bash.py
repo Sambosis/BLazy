@@ -177,7 +177,8 @@ def execute_script(script_type: str, script_code: str, display: AgentDisplay = N
             exec(script_code)
             output_out = redirected_output.getvalue()
             error_out = redirected_error.getvalue()
-
+            display.add_message("user", f"Output:\n{output_out}")
+            display.add_message("user", f"Error Message:\n{error_out}")
             if not error_out:
                 saved_path = save_successful_code(script_code)
                 # output_out += f"\nCode saved to: {saved_path}"

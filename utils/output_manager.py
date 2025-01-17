@@ -42,7 +42,7 @@ class OutputManager:
         if isinstance(result, str):
             output_text += f"{result}"
         else:
-            text = self._truncate_string(result.output or "")
+            text = self._truncate_string(str(result.output) or "")
             output_text += f"Output: {text}\n"
             if result.base64_image:
                 image_path = self.save_image(result.base64_image)
@@ -97,12 +97,12 @@ class OutputManager:
                         for item in content_block.get("content", []):
                             if item.get("type") == "text":
                                 text = self._truncate_string(item.get("text", ""))
-                                self.display.add_message("user", text)
-                            elif item.get("type") == "image":
-                                self.display.add_message("user", "📸 Screenshot captured")
+                            #     self.display.add_message("user", text)
+                            # elif item.get("type") == "image":
+                            #     self.display.add_message("user", "📸 Screenshot captured")
         elif isinstance(content, str):
             text = self._truncate_string(content)
-            self.display.add_message("user", text)
+            # self.display.add_message("user", text)
 
     def _format_assistant_content(self, content: Any):
         """Format and display assistant content."""

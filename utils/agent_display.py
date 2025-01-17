@@ -111,11 +111,17 @@ class AgentDisplay:
             if not self.message_queue.empty():
                 msg_type, content = self.message_queue.get()
                 if msg_type == "user":
+                    # self.clear_messages("user")
+                    # await asyncio.sleep(delay=0.1)
+                    self.user_messages= self.user_messages[-6:]
                     self.user_messages.append(content)
+                    await asyncio.sleep(delay=0.1)
                 elif msg_type == "assistant":
                     self.assistant_messages.append(content)
+                    await asyncio.sleep(delay=0.1)
                 elif msg_type == "tool":
                     self.tool_results.append(content)
+                    await asyncio.sleep(delay=0.1)
                 
                 # Force an immediate layout update
                 live.update(self.create_layout())
@@ -139,3 +145,24 @@ class AgentDisplay:
             self.message_queue.put((msg_type, content))
         except Exception as e:
             print(f"Error adding message to queue: {e}")
+
+    # clears the messages from a specified layout panel
+    def clear_messages(self, layout_name):
+        """
+        Clears the messages from a specified layout panel.
+        Args:
+            layout_name: The name of the layout panel to clear.
+            Returns:
+            None
+        """
+        if layout_name == "user" or "all":
+            self.user_messages.clear()
+        if layout_name == "assistant" or "all":
+            self.assistant_messages.clear()
+        if layout_name == "tool" or "all":
+            self.tool_results.clear()
+        # Force an immediate layout update
+        # self.live.update(self.create_layout())
+
+
+            

@@ -146,7 +146,7 @@ class WindowsNavigationTool:
                 if not windows:
                     return ToolResult(error=f"No window found with title '{target}'")
                 windows[0].activate()
-                time.sleep(0.5)
+                time.sleep(0.2)
 
             # Execute the key combination
             pyautogui.hotkey(*keys)
