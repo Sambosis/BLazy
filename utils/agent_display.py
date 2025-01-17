@@ -113,6 +113,7 @@ class AgentDisplay:
                 if msg_type == "user":
                     # self.clear_messages("user")
                     # await asyncio.sleep(delay=0.1)
+                    self.user_messages= self.user_messages[-6:]
                     self.user_messages.append(content)
                     await asyncio.sleep(delay=0.1)
                 elif msg_type == "assistant":

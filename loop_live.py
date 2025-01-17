@@ -251,7 +251,7 @@ def get_journal_contents() -> str:
     except FileNotFoundError:
         return "No journal entries yet."
 
-def truncate_message_content(content: Any, max_length: int = 50000) -> Any:
+def truncate_message_content(content: Any, max_length: int = 20000) -> Any:
     if isinstance(content, str):
         return content[:max_length]
     elif isinstance(content, list):
@@ -318,11 +318,11 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
                 ic(messages)
 
-                # truncated_messages = [
-                #     {"role": msg["role"], "content": truncate_message_content(msg["content"])}
-                #     for msg in messages
-                # ]
-                await asyncio.sleep(0.5)
+                truncated_messages = [
+                    {"role": msg["role"], "content": truncate_message_content(msg["content"])}
+                    for msg in messages
+                ]
+                await asyncio.sleep(0.2)
                 # display.live.stop()  # Stop the live display
                 # # Ask user if they are done reviewing the info using rich's Confirm.ask
                 # while Confirm.ask("Do you need more time?", default=True):
@@ -333,13 +333,6 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 #         rr(message)
                 # display.live.start()  # Restart the live display
                 
-
-
-                await asyncio.sleep(delay=0.5)
-
-                
-                await asyncio.sleep(delay=0.5)
-
                 messages_to_display = messages[-1:] if len(messages) > 1 else messages[-1:]
                 for message in messages_to_display:
                     if isinstance(message, dict):
@@ -385,7 +378,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 # await asyncio.sleep(delay=0.5)
                 response = client.beta.messages.create(
                     max_tokens=MAX_SUMMARY_TOKENS,
-                    messages=messages,
+                    messages=truncated_messages,
                     model=SUMMARY_MODEL,
                     system=system,
                     tools=tool_collection.to_params(),
@@ -395,7 +388,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     display.clear_messages("all")
 
                 # display.add_message("assistant", response.content[0].text) # Update display
-                # await asyncio.sleep(0.5)
+                # await asyncio.sleep(0.2)
                 
 
 
@@ -461,7 +454,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                         running = False
                     messages.append({"role": "user", "content": task})
                 # display.clear_messages("user")
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.2)
                 messages_to_display = messages[-2:] if len(messages) > 1 else messages[-1:]
                 for message in messages_to_display:
                     display.add_message("tool", message["content"][0]) # Update display
