@@ -5,6 +5,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
+from re import U
 from typing import Any, Callable, Dict, List, Optional, cast
 from config import *
 import ftfy
@@ -285,13 +286,13 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
              with open(JOURNAL_FILE, 'r',encoding='utf-8') as f:
                  journal_entry_count = sum(1 for line in f if line.startswith("Entry #")) + 1
         journal_contents = get_journal_contents()
-
+        enable_prompt_caching = True
+        betas = [COMPUTER_USE_BETA_FLAG, PROMPT_CACHING_BETA_FLAG]
+        image_truncation_threshold = 1
+        only_n_most_recent_images = 2
         while running:
             await asyncio.sleep(0.1)  # Smal
-            enable_prompt_caching = True
-            betas = [COMPUTER_USE_BETA_FLAG, PROMPT_CACHING_BETA_FLAG]
-            image_truncation_threshold = 1
-            only_n_most_recent_images = 2
+
 
             i+=1
             if enable_prompt_caching:
@@ -317,33 +318,88 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
                 ic(messages)
 
-                truncated_messages = [
-                    {"role": msg["role"], "content": truncate_message_content(msg["content"])}
-                    for msg in messages
-                ]
+                # truncated_messages = [
+                #     {"role": msg["role"], "content": truncate_message_content(msg["content"])}
+                #     for msg in messages
+                # ]
+                await asyncio.sleep(0.5)
+                # display.live.stop()  # Stop the live display
+                # # Ask user if they are done reviewing the info using rich's Confirm.ask
+                # while Confirm.ask("Do you need more time?", default=True):
+                #     ci=0
+                #     for message in messages:
+                #         rr(f"Message # {ci}")
+                #         ci+=1
+                #         rr(message)
+                # display.live.start()  # Restart the live display
+                
 
+
+                await asyncio.sleep(delay=0.5)
+
+                
+                await asyncio.sleep(delay=0.5)
+
+                messages_to_display = messages[-1:] if len(messages) > 1 else messages[-1:]
+                for message in messages_to_display:
+                    if isinstance(message, dict):
+                        if message.get("type") == "text":
+                            display_output = message.get("text", "")
+                            display.add_message("user", "type text")
+
+                        elif message.get("type") == "image":
+                            display_output = "Image"
+                        elif message.get("type") == "tool_result":
+                            display_output = message["content"][0].get("text", "")
+                            display.add_message("user", "type tool result")
+                        elif message.get("type") == "tool_result_image":
+                            display_output = "Image"
+                        elif message.get("type") == "tool_use":
+                            display_output = f"Calling tool: {message.get('name', '')}"
+                            display_output += f"Input: {json.dumps(message.get('input', {}))}"
+                            display.add_message("user", "tool use")
+                        else:
+                            # display.add_message("user", "First Else")
+                            if len(messages) == 1:
+                                display_output = message['content']
+                            else:
+                                try:
+                                    display_output = message['content'][0]['content'][0]['text']
+                                except:
+                                    try:
+                                        display_output = message['content'][0]['text']
+                                    except:
+                                        display_output = message
+                    elif isinstance(message, str):
+                        display.add_message("user", "first elif")
+
+                        display_output = message
+                    else:
+                        display_output = str(message)
+                        display.add_message("user", "second Else")
+
+                    
+                    display.add_message("user", display_output)
+                    await asyncio.sleep(delay=0.5)
+                # display.add_message("user",f"Waiting on LLM Response...")
+                # await asyncio.sleep(delay=0.5)
                 response = client.beta.messages.create(
                     max_tokens=MAX_SUMMARY_TOKENS,
-                    messages=truncated_messages,
+                    messages=messages,
                     model=SUMMARY_MODEL,
                     system=system,
                     tools=tool_collection.to_params(),
                     betas=betas,
                 )
-                # add a small pause
-                await asyncio.sleep(0.5)
-                display.live.stop()  # Stop the live display
-                await asyncio.sleep(0.5)
-                rr(_extract_text_from_content(response.content))
-                # Ask user if they are done reviewing the info using rich's Confirm.ask
-                while Confirm.ask("Do you need more time?", default=True):
-                    rr(response)
+                if len(messages) < 2:
+                    display.clear_messages("all")
 
-                display.live.start()  # Restart the live display
-                token_tracker.update(response)
-                token_tracker.display()
+                # display.add_message("assistant", response.content[0].text) # Update display
+                # await asyncio.sleep(0.5)
+                
 
-                ic(f"Response: {response}")
+
+
                 response_params = []
                 for block in response.content:
                     if hasattr(block, 'text'):
@@ -363,20 +419,39 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 for content_block in response_params:
                     output_manager.format_content_block(content_block)
                     if content_block["type"] == "tool_use":
-                        ic(f"Tool Use: {response_params}")
-                        display.add_message("user", f"Calling tool: {content_block['name']}")  # Display message before calling the tool
+                        display.add_message("tool", f"Calling tool: {content_block['name']}")
                         result = await tool_collection.run(
                             name=content_block["name"],
                             tool_input=content_block["input"],
                         )
-                        ic.configureOutput(includeContext=True, outputFunction=write_to_file,argToStringFunction=repr)
-                        ic(content_block)
-                        output_manager.format_tool_output(result, content_block["name"])
+
+                        # output_manager.format_tool_output(result, content_block["name"])
                         tool_result = _make_api_tool_result(result, content_block["id"])
                         ic(tool_result)
                         tool_result_content.append(tool_result)
                         tool_output = result.output if hasattr(result, 'output') else str(result)
-                        display.add_message("tool", (content_block["name"], _extract_text_from_content(tool_output))) # Update display
+                        # display.add_message("tool", (content_block["name"], _extract_text_from_content(tool_output)))
+                        
+                        # Create a combined content list with both text and tool result
+                        combined_content = [{
+                            "type": "tool_result",
+                            "content": tool_result["content"],
+                            "tool_use_id": tool_result["tool_use_id"],
+                            "is_error": tool_result["is_error"]
+                        }]
+                        
+                        # Add descriptive text about the tool usage
+                        combined_content.append({
+                            "type": "text",
+                            "text": f"Tool '{content_block['name']}' was called with input: {json.dumps(content_block['input'])}.\nResult: {_extract_text_from_content(tool_output)}"
+                        })
+                        
+                        # Add a single message with the combined content
+                        messages.append({
+                            "role": "user",
+                            "content": combined_content
+                        })
+
                 if not tool_result_content:
                     display.live.stop()  # Stop the live display
                     rr("\nAwaiting User Input ⌨️")
@@ -385,26 +460,28 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     if task.lower() in ["no", "n"]:
                         running = False
                     messages.append({"role": "user", "content": task})
-                else:
-                    messages.append({"role": "user", "content": tool_result_content})
-                    display.add_message("user", _extract_text_from_content(tool_result_content)) # Update display
-                display.add_message("user",f"There are {len(messages)} messages")
+                # display.clear_messages("user")
+                await asyncio.sleep(0.5)
+                messages_to_display = messages[-2:] if len(messages) > 1 else messages[-1:]
+                for message in messages_to_display:
+                    display.add_message("tool", message["content"][0]) # Update display
 
-                # if len(messages) > MAX_SUMMARY_MESSAGES:
-                #     # rr(f"\nMessages exceed {MAX_SUMMARY_MESSAGES} - generating summary...")
-                #     messages = await summarize_messages(messages)
-                #     # rr("[green]Summary generated - conversation compressed[/green]")
+                # display.add_message("user",f"There are {len(messages)} messages")
+                # await asyncio.sleep(1.0)
 
-                # try:
-                #     await create_journal_entry(
-                #         entry_number=journal_entry_count,
-                #         messages=messages,
-                #         response=response,
-                #         client=client
-                #     )
-                #     journal_entry_count += 1
-                # except Exception as e:
-                #     ic(f"Error creating journal entry: {str(e)}")
+                # display.live.stop()  # Stop the live display
+                # # Ask user if they are done reviewing the info using rich's Confirm.ask
+                # while Confirm.ask("Do you need more time?", default=True):
+                #     ci=0
+                #     for message in messages:
+                #         rr(f"Message # {ci}")
+                #         ci+=1
+                #         rr(message)
+                # display.live.start()  # Restart the live display
+                # asyncio.sleep(delay=0.5)
+                token_tracker.update(response)
+
+
 
             except UnicodeEncodeError as ue:
                 ic(f"UnicodeEncodeError: {ue}")
@@ -615,7 +692,7 @@ async def main_async():
         console = Console()
         
         # Start Live display with the layout
-        with Live(display.create_layout(), refresh_per_second=10, auto_refresh=True) as live:
+        with Live(display.create_layout(), refresh_per_second=4, auto_refresh=True) as live:
             display.live = live  # Set the live attribute
             update_task = asyncio.create_task(display.update_display(live))
             # Run the main sampling loop
