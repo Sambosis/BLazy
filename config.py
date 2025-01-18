@@ -18,7 +18,7 @@ SYSTEM_PROMPT_DIR = TOP_LEVEL_DIR / 'system_prompt'
 SYSTEM_PROMPT_FILE = SYSTEM_PROMPT_DIR / 'system_prompt.md'
 BASH_PROMPT_DIR = TOP_LEVEL_DIR / 'tools'
 BASH_PROMPT_FILE = BASH_PROMPT_DIR / 'bash.md'
-LLM_GEN_CODE_DIR = TOP_LEVEL_DIR / 'llm_gen_code'
+LLM_GEN_CODE_DIR = None  # Initialize as None
 TOOLS_DIR = TOP_LEVEL_DIR / 'tools'
 SCRIPTS_DIR = TOP_LEVEL_DIR / 'scripts'
 TESTS_DIR = TOP_LEVEL_DIR / 'tests'
@@ -52,7 +52,7 @@ def write_constants_to_file():
         'SYSTEM_PROMPT_FILE': str(SYSTEM_PROMPT_FILE),
         'BASH_PROMPT_DIR': str(BASH_PROMPT_DIR),
         'BASH_PROMPT_FILE': str(BASH_PROMPT_FILE),
-        'LLM_GEN_CODE_DIR': str(LLM_GEN_CODE_DIR),
+        'LLM_GEN_CODE_DIR': str(LLM_GEN_CODE_DIR) if LLM_GEN_CODE_DIR else "",
         'TOOLS_DIR': str(TOOLS_DIR),
         'SCRIPTS_DIR': str(SCRIPTS_DIR),
         'TESTS_DIR': str(TESTS_DIR),
@@ -116,9 +116,11 @@ def set_constant(name, value):
 
 # function to set the project directory
 def set_project_dir(new_dir):
-    global PROJECT_DIR
+    global PROJECT_DIR, LLM_GEN_CODE_DIR
     PROJECT_DIR = REPO_DIR / new_dir
+    LLM_GEN_CODE_DIR = PROJECT_DIR / 'llm_gen_code'
     set_constant('PROJECT_DIR', str(PROJECT_DIR))
+    set_constant('LLM_GEN_CODE_DIR', str(LLM_GEN_CODE_DIR))
     return PROJECT_DIR
 
 # function to get the project directory

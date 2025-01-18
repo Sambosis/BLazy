@@ -209,8 +209,8 @@ class BashTool(BaseAnthropicTool):
 def save_successful_code(script_code: str) -> str:
     """Save successfully executed Python code to a file."""
     # Create directory if it doesn't exist
-    project_dir = Path(get_constant("PROJECT_DIR"))
-    save_dir = project_dir / "llm_gen_code"
+    llm_gen_code_dir = Path(get_constant("LLM_GEN_CODE_DIR"))
+    save_dir = llm_gen_code_dir
     save_dir.mkdir(exist_ok=True)
     ic(script_code)
     # Extract first line of code for filename (cleaned)

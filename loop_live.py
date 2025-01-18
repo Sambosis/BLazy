@@ -161,7 +161,7 @@ class TokenTracker:
         # Send to display using system message type
         self.displayA.add_message("system", token_display)
 
-with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
+with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f):
     JOURNAL_SYSTEM_PROMPT = f.read()
 
 
