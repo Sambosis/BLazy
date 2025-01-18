@@ -422,3 +422,7 @@ class EditTool(BaseAnthropicTool):
             LOG_FILE.write_text(json.dumps(logs, indent=2), encoding='utf-8')
         except Exception as e:
             print(f"Warning: Failed to log file operation: {e}")
+
+    def get_project_dir(self) -> Path:
+        """Return the project directory path."""
+        return Path(__file__).resolve().parent.parent
