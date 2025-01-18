@@ -23,9 +23,11 @@ dependencies = [
     "pydeps",
     "pysnooper",
     "python-dotenv",
+    "restrictedpython>=7.4",
     "ruff",
     "tenacity",
     "types-beautifulsoup4",
     "types-pyautogui",
     "unimport",
 ]
+

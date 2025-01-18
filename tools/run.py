@@ -6,6 +6,7 @@ import re
 import shlex
 from typing import List, Tuple
 import subprocess
+# from config import *
 TRUNCATED_MESSAGE: str = "<response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file the line numbers of what you are looking for. Remember to use you are working in Windows.</NOTE>"
 MAX_RESPONSE_LEN: int = 16000
 
@@ -76,12 +77,13 @@ def convert_bash_to_powershell(bash_command: str) -> str:
 
     def translate_path(path: str) -> str:
         """Translate Unix-style paths to Windows-style paths."""
+        PROJECT_DIR = get_constant('PROJECT_DIR')
         if path.startswith('~'):
             path = path.replace('~', '$env:USERPROFILE')
         path = re.sub(r'\$(?!env:)(\w+)', r'$env:\1', path)  # Avoid double $env:
         path = path.replace('/', '\\')
         if re.match(r'^\\', path):
-            path = 'C:' + path
+            path = PROJECT_DIR / path
         return f"'{path}'"
 
     def verify_path(path: str) -> str:

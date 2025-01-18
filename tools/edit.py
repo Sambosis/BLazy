@@ -14,8 +14,8 @@ import sys
 from rich import print as rr
 import datetime
 import json
-from load_constants import WORKER_DIR, write_to_file, ICECREAM_OUTPUT_FILE
-from config import REPO_DIR
+from load_constants import  write_to_file, ICECREAM_OUTPUT_FILE
+from config import get_constant, set_constant  # Updated import
 
 # Reconfigure stdout to use UTF-8 encoding
 sys.stdout.reconfigure(encoding='utf-8')
@@ -32,8 +32,12 @@ Command = Literal[
     "undo_edit",
 ]
 SNIPPET_LINES: int = 4
-LOG_FILE = WORKER_DIR / "file_creation_log.json"
+LOGS_DIR = Path(get_constant('LOGS_DIR'))
+LOG_FILE = LOGS_DIR / "file_creation_log.json"
+PROJECT_DIR = Path(get_constant('PROJECT_DIR'))
 
+
+# set_constant('LOG_FILE', str(LOG_FILE))  # Ensure LOG_FILE is a string path
 class EditTool(BaseAnthropicTool):
     description="""
     A cross-platform filesystem editor tool that allows the agent to view, create, and edit files.
@@ -70,8 +74,7 @@ class EditTool(BaseAnthropicTool):
         **kwargs,
     ) -> ToolResult:
 
-        _path = Path(path).resolve()  # resolve() handles both Windows and Unix paths
-        ic(_path)
+        _path = Path(path)
 
         # _path = self.validate_path(command, _path)
         if command == "view":
@@ -104,85 +107,29 @@ class EditTool(BaseAnthropicTool):
         )
     def normalize_path(self, path: Optional[str]) -> Path:
         """
-        Normalize a file path to ensure it starts with 'C:/repo/'.
         
         Args:
             path: Input path string that needs to be normalized
             Note:
             This method is used to normalize the path provided by the user.
-            The normalized path is used to ensure that the path starts with 'C:/repo/'
             and is a valid path.
         Returns:
-            Normalized path string starting with 'C:/repo/'
             
         Raises:
             ValueError: If the path is None or empty
         """
-        if not path:
-            raise ValueError('Path cannot be empty')
-        
-        # Convert to string in case we receive a Path object
-        normalized_path = str(path)
-        
-        # Convert all backslashes to forward slashes
-        normalized_path = normalized_path.replace('\\', '/')
-        
-        # Remove any leading/trailing whitespace
-        normalized_path = normalized_path.strip()
-        
-        # Remove multiple consecutive forward slashes
-        normalized_path = re.sub(r'/+', '/', normalized_path)
-        
-        # Remove 'C:' or 'c:' if it exists at the start
-        normalized_path = re.sub(r'^[cC]:', '', normalized_path)
-        
-        # Remove '/repo/' if it exists at the start
-        normalized_path = re.sub(r'^/repo/', '', normalized_path)
-        
-        # Remove leading slash if it exists
-        normalized_path = re.sub(r'^/', '', normalized_path)
-        # Combine with base path
-        return Path(f'C:/repo/{normalized_path}')
 
-    def validate_path(self, command: str, path: Path):
-        """
-        Check that the path/command combination is valid in a cross-platform manner.
-        param command: The command that the user is trying to run.
-        """
-        # path = self.normalize_path(path)
-        try:
-            # This handles both Windows and Unix paths correctly
-            path = path.resolve()
-        except Exception as e:
-            raise ToolError(f"Invalid path format: {path}. Error: {str(e)}")
+        # if path contains repo then drop everthing including repo before repo
+        if "repo" in path:
+            path = path.split("repo")[1]
+        path = PROJECT_DIR / path
+        return path
 
-        # Check if it's an absolute path
-        if not path.is_absolute():
-            suggested_path = Path.cwd() / path
-            raise ToolError(
-                f"The path {path} is not an absolute path. Maybe you meant {suggested_path}?"
-            )
 
-        # Check if path exists
-        if not path.exists() and command != "create":
-            raise ToolError(
-                f"The path {path} does not exist. Please provide a valid path."
-            )
-        if path.exists() and command == "create":
-            raise ToolError(
-                f"File already exists at: {path}. Cannot overwrite files using command `create`."
-            )
-
-        # Check if the path points to a directory
-        if path.is_dir():
-            if command != "view":
-                raise ToolError(
-                    f"The path {path} is a directory and only the `view` command can be used on directories"
-                )
+    
     async def view(self, path: Path, view_range: Optional[List[int]] = None) -> ToolResult:
         """Implement the view command using cross-platform methods."""
         ic(path)
-        # path = self.normalize_path(path)
         if path.is_dir():
             if view_range:
                 raise ToolError(
@@ -235,7 +182,6 @@ class EditTool(BaseAnthropicTool):
                 file_content = "\n".join(file_lines[init_line - 1:])
             else:
                 file_content = "\n".join(file_lines[init_line - 1 : final_line])
-        ic(file_content)
         return ToolResult(output=self._make_output(file_content, str(path), init_line=init_line), error=None, base64_image=None)
     def str_replace(self, path: Path, old_str: str, new_str: Optional[str]) -> ToolResult:
         """Implement the str_replace command, which replaces old_str with new_str in the file content."""
@@ -325,19 +271,18 @@ class EditTool(BaseAnthropicTool):
         )
         success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the file again if necessary."
         return ToolResult(output=success_msg)
-    def ensure_valid_repo_path(filename: str) -> str:
-        ### Need to Try this out ###
-        base_path = "C:/repo/"
+    # def ensure_valid_repo_path(filename: str) -> str:
+    #     ### Need to Try this out ###
+    #     base_path = PROJECT_DIR
         
-        # Normalize path separators for cross-platform compatibility
-        filename = filename.replace("\\", "/")
+    #     # Normalize path separators for cross-platform compatibility
+    #     filename = filename.replace("\\", "/")
         
-        # Check if the filename already starts with the base path
-        if not filename.startswith(base_path):
-            # Prepend the base path if it's not present
-            filename = os.path.join(base_path, filename.lstrip("/"))
-        # filename = self.normalize_path(filename)
-        # Return the standardized path using Windows-style separator
+    #     # Check if the filename already starts with the base path
+    #     if not filename.startswith(base_path):
+    #         # Prepend the base path if it's not present
+    #         filename = os.path.join(base_path, filename.lstrip("/"))
+
         return os.path.normpath(filename)
     def undo_edit(self, path: Path) -> ToolResult:
         """Implement the undo_edit command."""
@@ -353,17 +298,12 @@ class EditTool(BaseAnthropicTool):
         )
 
     def read_file(self, path: Path) -> str:
-        rr(path)
-
-        # path = self.normalize_path(path)
-
         try:
             return path.read_text(encoding="utf-8").encode('ascii', errors='replace').decode('ascii')
         except Exception as e:
             ic(f"Error reading file {path}: {e}")
             raise ToolError(f"Ran into {e} while trying to read {path}") from None
     def write_file(self, path: Path, file: str):
-        # path = self.normalize_path(path)
         """Write the content of a file to a given path; raise a ToolError if an error occurs."""
         try:
             # create the directory of path if it doesn't exist

@@ -11,11 +11,11 @@ from icecream import ic
 
 from .agent_display import AgentDisplay  # Relative import for AgentDisplay
 from tools import ToolResult # for typing results
-from load_constants import get_logs_dir # Import for image storage
-
+from config import  get_constant, set_constant  # Updated import
 class OutputManager:
     def __init__(self, display: AgentDisplay, image_dir: Optional[Path] = None):
-        self.image_dir = image_dir or get_logs_dir() / 'computer_tool_images'
+        LOGS_DIR = Path(get_constant('LOGS_DIR'))
+        self.image_dir = LOGS_DIR / 'computer_tool_images'
         self.image_dir.mkdir(parents=True, exist_ok=True)
         self.image_counter = 0
         self.display = display
@@ -70,13 +70,7 @@ class OutputManager:
         elif hasattr(block, 'text'):
             self.display.add_message("assistant", block.text)
 
-    def _truncate_string(self, text: str, max_length: int = 400) -> str:
-        """Truncate a string to a max length with ellipsis."""
-        if not text:
-            return ""
-        if len(text) > max_length:
-            return text[:100] + "\n...\n" + text[-200:]
-        return text
+
 
     def format_recent_conversation(self, messages: List[BetaMessageParam], num_recent: int = 10):
         """Format and display recent conversation."""

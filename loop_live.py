@@ -8,6 +8,8 @@ from pathlib import Path
 from re import U
 from typing import Any, Callable, Dict, List, Optional, cast
 from config import *
+write_constants_to_file()
+
 import ftfy
 from anthropic import Anthropic, APIResponse
 from anthropic.types.beta import (
@@ -21,6 +23,7 @@ from dotenv import load_dotenv
 from icecream import ic, install
 from rich import print as rr
 from rich.prompt import Prompt, Confirm
+from load_constants import SYSTEM_PROMPT
 from tools import (
     BashTool,
     EditTool,
@@ -46,39 +49,16 @@ from utils.output_manager import OutputManager
 load_dotenv()
 install()
 
-MAX_SUMMARY_MESSAGES = 40
-MAX_SUMMARY_TOKENS = 8000
 ICECREAM_OUTPUT_FILE = Path.cwd() / "debug_log.json"
-JOURNAL_FILE = Path.cwd() / "journal" / "journal.log"
-JOURNAL_ARCHIVE_FILE = Path.cwd() / "journal" / "journal.log.archive"
+# JOURNAL_FILE = Path.cwd() / "journal" / "journal.log"
+# JOURNAL_ARCHIVE_FILE = Path.cwd() / "journal" / "journal.log.archive"
 
-HOME = Path.home()
-PROMPT_NAME = None
+# JOURNAL_SYSTEM_PROMPT_FILE = Path.cwd() / "journal" / "journal_system_prompt.md"
+# PROMPT_NAME = None
+with open(SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
+    SYSTEM_PROMPT = f.read()
 
-def get_workspace_dir():
-    return HOME / f"{PROMPT_NAME}/workspace"
 
-def get_logs_dir():
-    return HOME / f"{PROMPT_NAME}/logs"
-
-def update_paths():
-    logs_dir = get_logs_dir()
-    return {
-        'ICECREAM_OUTPUT_FILE': logs_dir / "debug_log.json",
-        'JOURNAL_FILE': logs_dir / "journal/journal.log",
-        'JOURNAL_ARCHIVE_FILE': logs_dir / "journal/journal.log.archive",
-        'SUMMARY_FILE': logs_dir / "summaries/summary.md",
-        'SYSTEM_PROMPT_FILE': logs_dir / "prompts/system_prompt.md",
-        'JOURNAL_SYSTEM_PROMPT_FILE': logs_dir / "prompts/journal_prompt.md"
-    }
-
-def load_system_prompts():
-    paths = update_paths()
-    with open(paths['SYSTEM_PROMPT_FILE'], 'r', encoding="utf-8") as f:
-        SYSTEM_PROMPT = f.read()
-    with open(paths['JOURNAL_SYSTEM_PROMPT_FILE'], 'r', encoding="utf-8") as f:
-        JOURNAL_SYSTEM_PROMPT = f.read()
-    return SYSTEM_PROMPT, JOURNAL_SYSTEM_PROMPT
 
 def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
     lines = s.split('\n')
@@ -88,6 +68,7 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
     for line in lines:
         if "tool_input:" in line:
             try:
+                ic(line)
                 json_part = line.split("tool_input: ")[1]
                 if json_part.strip().startswith('{') and json_part.strip().endswith('}'):
                     json_obj = json.loads(json_part)
@@ -103,9 +84,6 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
         f.write('\n'.join(formatted_lines))
         f.write('\n' + '-' * 80 + '\n')
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
-
-with open(SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
-    SYSTEM_PROMPT = f.read()
 
 
 def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
@@ -134,8 +112,7 @@ def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
         "is_error": is_error,
     }
 
-COMPUTER_USE_BETA_FLAG = "computer-use-2024-10-22"
-PROMPT_CACHING_BETA_FLAG = "prompt-caching-2024-07-31"
+
 
 class TokenTracker:
     def __init__(self, display: AgentDisplay):
@@ -187,45 +164,10 @@ class TokenTracker:
         
         # Send to display using system message type
         self.displayA.add_message("system", token_display)
-JOURNAL_MODEL = "claude-3-5-haiku-latest"
-SUMMARY_MODEL = "claude-3-5-sonnet-latest"
-JOURNAL_MAX_TOKENS = 1500
-JOURNAL_SYSTEM_PROMPT_FILE = Path.cwd() / "journal" / "journal_system_prompt.md"
+
 with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     JOURNAL_SYSTEM_PROMPT = f.read()
 
-def create_journal_entry(*, entry_number: int, messages: List[BetaMessageParam], response: APIResponse, client: Anthropic):
-    try:
-        user_message = ""
-        assistant_response = ""
-        for msg in reversed(messages):
-            if msg['role'] == 'user':
-                user_message = _extract_text_from_content(msg['content'])
-            if msg['role'] == 'assistant' and response.content:
-                assistant_response = " ".join([block.text for block in response.content if hasattr(block, 'text')])
-        if not user_message or not assistant_response:
-            ic("Skipping journal entry - missing content")
-            return
-        journal_prompt = f"Summarize this interaction:\nUser: {user_message}\nAssistant: {assistant_response}"
-        haiku_response = client.messages.create(
-            model=JOURNAL_MODEL,
-            max_tokens=JOURNAL_MAX_TOKENS,
-            messages=[{"role": "user", "content": journal_prompt}],
-            system=JOURNAL_SYSTEM_PROMPT
-        )
-        summary = haiku_response.content[0].text.strip()
-        if not summary:
-            ic("Skipping journal entry - no summary generated")
-            return
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        journal_entry = f"\nEntry #{entry_number} - {timestamp}\n{summary}\n-------------------\n"
-        os.makedirs(os.path.dirname(JOURNAL_FILE), exist_ok=True)
-        journal_entry = ftfy.fix_text(journal_entry)
-        with open(JOURNAL_FILE, 'a', encoding='utf-8') as f:
-            f.write(journal_entry)
-        ic(f"Created journal entry #{entry_number}")
-    except Exception as e:
-        ic(f"Error creating journal entry: {str(e)}")
 
 def _extract_text_from_content(content: Any) -> str:
     if isinstance(content, str):
@@ -274,18 +216,12 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
         )
         ic(tool_collection)
         display.add_message("system", tool_collection.get_tool_names_as_string())
-        system = BetaTextBlockParam(type="text", text=SYSTEM_PROMPT)
+        system = BetaTextBlockParam(type="text", text=SYSTEM_PROMPT_FILE)
         output_manager = OutputManager(display)
         client = Anthropic(api_key=api_key)
         i = 0
-        ic(i)
         running = True
         token_tracker = TokenTracker(display)
-        journal_entry_count = 1
-        if os.path.exists(JOURNAL_FILE):
-             with open(JOURNAL_FILE, 'r',encoding='utf-8') as f:
-                 journal_entry_count = sum(1 for line in f if line.startswith("Entry #")) + 1
-        journal_contents = get_journal_contents()
         enable_prompt_caching = True
         betas = [COMPUTER_USE_BETA_FLAG, PROMPT_CACHING_BETA_FLAG]
         image_truncation_threshold = 1
@@ -374,12 +310,13 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     
                     display.add_message("user", display_output)
                     await asyncio.sleep(delay=0.5)
-                # display.add_message("user",f"Waiting on LLM Response...")
-                # await asyncio.sleep(delay=0.5)
+                quick_summary = await summarize_recent_messages(messages[-4:], display)
+                display.add_message("assistant", f"Here is a quick summary of what I did:\n {quick_summary}")
+                await asyncio.sleep(0.2)
                 response = client.beta.messages.create(
                     max_tokens=MAX_SUMMARY_TOKENS,
                     messages=truncated_messages,
-                    model=SUMMARY_MODEL,
+                    model=MAIN_MODEL,
                     system=system,
                     tools=tool_collection.to_params(),
                     betas=betas,
@@ -413,11 +350,14 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     output_manager.format_content_block(content_block)
                     if content_block["type"] == "tool_use":
                         display.add_message("tool", f"Calling tool: {content_block['name']}")
+                        display.live.stop()
+                        await asyncio.sleep(0.5)
                         result = await tool_collection.run(
                             name=content_block["name"],
                             tool_input=content_block["input"],
                         )
-
+                        await asyncio.sleep(0.5)
+                        display.live.start()
                         # output_manager.format_tool_output(result, content_block["name"])
                         tool_result = _make_api_tool_result(result, content_block["id"])
                         ic(tool_result)
@@ -447,6 +387,8 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
                 if not tool_result_content:
                     display.live.stop()  # Stop the live display
+                    # add a small delay
+                    await asyncio.sleep(0.2)
                     rr("\nAwaiting User Input ⌨️")
                     task = Prompt.ask("What would you like to do next? Enter 'no' to exit")
                     display.live.start()  # Restart the live display
@@ -515,8 +457,8 @@ def _inject_prompt_caching(messages: List[BetaMessageParam]):
 def _maybe_filter_to_n_most_recent_images(
     messages: List[BetaMessageParam],
     images_to_keep: int,
-    min_removal_threshold: int,
-):
+    min_removal_threshold: int
+    ):
     if images_to_keep is None:
         return messages
 
@@ -554,29 +496,12 @@ def _maybe_filter_to_n_most_recent_images(
                 new_content.append(content)
           tool_result["content"] = new_content
 
-async def summarize_messages(messages: List[BetaMessageParam]) -> List[BetaMessageParam]:
-    if len(messages) <= MAX_SUMMARY_MESSAGES:
-        return messages
-    original_prompt = messages[0]["content"]
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+async def summarize_recent_messages(messages: List[BetaMessageParam], display: AgentDisplay) -> str:
 
-    summary_prompt = """Please provide a detailed technical summary of this conversation. Include:
-    1. All file names and paths mentioned
-    2. Directory structures created or modified
-    3. Specific actions taken and their outcomes
-    4. Any technical decisions or solutions implemented
-    5. Current status of the task
-    6. Any pending or incomplete items
-    7. Code that was written or modified
-
-    Original task prompt for context:
-    {original_prompt}
-
-    Conversation to summarize:
-    {conversation}"""
+    sum_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
     conversation_text = ""
-    for msg in messages[1:]:
+    for msg in messages:
         role = msg['role'].upper()
         if isinstance(msg['content'], list):
             for block in msg['content']:
@@ -589,37 +514,48 @@ async def summarize_messages(messages: List[BetaMessageParam]) -> List[BetaMessa
                                 conversation_text += f"\n{role} (Tool Result): {item.get('text', '')}"
         else:
             conversation_text += f"\n{role}: {msg['content']}"
-    ic(summary_prompt.format(
-                original_prompt=original_prompt,
-                conversation=conversation_text
-            ))
-    response = client.messages.create(
+
+
+    summary_prompt = f"""Please provide a concise casual natural language summary of the messages. 
+    They are the actual LLM messages log of interaction and you will provide between 1 and 3 conversational style sentences imforming someone what was done. 
+    Focusing on the actions taken and providing the names of and file, functions or other items that were specifically acted on and
+    a basic idea of what action was taken and why. We are goint to call this your SUMMARY_RESPONSE. Your SUMMARY_RESPONSE should be enclosed in XML style tags such as like this <SUMMARY_RESPONSE> and </SUMMARY_RESPONSE>
+    Your SUMMARY_RESPONSE should  be phased speaking in the first person like you are informing someone as to what you are doing. You could say somthing like this:
+    Ok, I will now give you the summary of the conversation.
+    <SUMMARY_RESPONSE>
+    I have just created a new file called foo.py in the foo/bar directory. 
+    I have also updated the great_code.py file with the following changes:
+    Added error handling to the function foo() to handle the case when the user enters an invalid input and added a new function called bar() that takes a string as input and returns the string in reverse order.
+    </SUMMARY_RESPONSE>
+    
+    
+    Include:
+    1. All file names, functions, directories and paths mentioned
+    2. Directory structures created or modified
+    3. Specific actions taken and their outcomes
+    4. Any technical decisions or solutions implemented
+
+    Messages to summarize:
+    {conversation_text}"""
+    response = sum_client.messages.create(
         model=SUMMARY_MODEL,
         max_tokens=MAX_SUMMARY_TOKENS,
         messages=[{
             "role": "user",
-            "content": summary_prompt.format(
-                original_prompt=original_prompt,
-                conversation=conversation_text
-            )
+            "content": summary_prompt
         }]
     )
     summary = response.content[0].text
-    ic(summary)
+    # filter out everything from the summary that is not enclosed in the XML style tags
+    start_tag = "<SUMMARY_RESPONSE>"
+    end_tag = "</SUMMARY_RESPONSE>"
+    if start_tag in summary and end_tag in summary:
+        summary = summary[summary.find(start_tag)+len(start_tag):summary.find(end_tag)]
 
-    new_messages = [
-        messages[0],
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"[CONVERSATION SUMMARY]\n\n{summary}"
-                }
-            ]
-        }
-    ]
-    return new_messages
+
+
+
+    return summary
 
 async def run_sampling_loop(task: str, display: AgentDisplay) -> List[BetaMessageParam]:
     """Run the sampling loop with clean output handling."""
@@ -633,20 +569,18 @@ async def run_sampling_loop(task: str, display: AgentDisplay) -> List[BetaMessag
  
 
     messages = await sampling_loop(
-        model="claude-3-5-sonnet-latest",
+        model=MAIN_MODEL,  # Use MAIN_MODEL from config.py
         messages=messages,
         api_key=api_key,
         display=display
     )
     return messages
 
-# from workspace import get_workspace_dir, get_logs_dir, set_prompt_name, create_workspace
 
 async def main_async():
     """Async main function with proper error handling."""
-    prompts_dir = Path.cwd() / "prompts"
+    prompts_dir =PROMPTS_DIR
     prompt_files = list(prompts_dir.glob("*.md"))
-
     rr("\nAvailablePrompts:")
     for i, file in enumerate(prompt_files, 1):
         rr(f"{i}. {file.name}")
@@ -663,8 +597,8 @@ async def main_async():
     else:
         prompt_path = prompt_files[int(choice) - 1]
         new_prompt_path = prompt_path
+        filename = prompt_path.stem
 
-    # create_workspace()
 
     if int(choice) == len(prompt_files) + 1:
         prompt_text = Prompt.ask("Enter your prompt")
@@ -675,7 +609,9 @@ async def main_async():
     else:
         with open(prompt_path, 'r', encoding='utf-8') as f:
             task = f.read()
-
+    project_dir = set_project_dir(filename)
+    set_constant("PROJECT_DIR", str(project_dir))
+    
     # Create the display instance and setup the layout
     display = AgentDisplay()  # Create instance of AgentDisplay
     layout = display.create_layout()  # Create initial layout

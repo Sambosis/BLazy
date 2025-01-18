@@ -1,0 +1,16 @@
+[project]
+name = "vineppo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flask-wtf>=1.2.2",
+    "flask>=3.1.0",
+    "gitpython>=3.1.44",
+    "jupyter>=1.1.1",
+    "nbformat>=5.10.4",
+    "pandas>=2.2.3",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+]

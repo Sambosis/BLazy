@@ -13,113 +13,22 @@ from anthropic import Anthropic
 
 from .base import BaseAnthropicTool, ToolError, ToolResult
 from utils.agent_display import AgentDisplay  # Add this line
-from load_constants import WORKER_DIR, ICECREAM_OUTPUT_FILE, write_to_file
+from load_constants import WORKER_DIR, write_to_file
 from icecream import ic
-from config import REPO_DIR
+from config import get_constant
 
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
-PROMPT_FILE = Path.cwd() / "tools" / "bash.md"
 
 
 def read_prompt_from_file(file_path: str, bash_command: str) -> str:
     """Read the prompt template from a file and format it with the given bash command."""
-    prompt_string = f"""You are an expert in converting Bash commands that use 'uv' (a hypothetical package manager and project tool) into Python scripts. The user will provide one or more 'uv' commands (like 'uv init', 'uv venv', 'uv pip install requests', 'uv run python my_script.py'), and your job is to create a single Python script that replicates those operations step-by-step.
-
-    Key Instructions:
-    1. The input is a sequence of 'uv' commands that might include:
-    • uv init
-    • uv venv
-    • uv add <dependency>
-    • uv pip <pip_action> ...
-    • uv run python ...
-    • Or any other 'uv' commands
-
-    2. Generate a Python script that performs an equivalent series of steps:
-    • If the command is 'uv init', it might set up a project directory or initialize something in Python code.
-    • If the command is 'uv venv', it should create or activate a Python virtual environment in a cross-platform-friendly way using Python.
-    • If the command is 'uv pip install <package>', then your Python script should install that package. Show how to do it programmatically (e.g., using subprocess to call pip, or some other approach that doesn’t terminate the script).
-    • If the command is 'uv run python <script>.py', your Python script should execute the target Python file or code with arguments as needed (again, show this via Python’s built-in modules, like subprocess, but do not exit the script prematurely).
-
-    3. DO NOT use sys.exit() or any other command that terminates the script execution prematurely.
-    4. Include comments that explain each step of the generated Python script.
-    5. If the commands involve file or directory operations (like setting up directories or copying files), include error handling (e.g., checking if a directory already exists before creating it).
-    6. Your output must be labeled as “Python Script:” followed by a code block containing the full Python code.
-    7. If the input Bash command or 'uv' command sequence is invalid or unsupported, return a short error description.
-    8. The project directory is {REPO_DIR} plus the name of the project and that you should use the absolute path at all times to avoid conflicts. 
-    Example usage of 'uv' commands and their equivalent Python script:
-
-    Input (Bash commands):
-        mkdir myproject
-        cd myproject
-        uv venv
-        .venv\\Scripts\\activate
-        uv init
-        uv add requests rich python-dotenv
-
-    Python Script:
-    ```python
-    import subprocess
-    from pathlib import Path
-    import os
-
-    def run_command(cmd, cwd=None):
-        try:
-            subprocess.run(cmd, check=True, shell=True, cwd=cwd)
-            print(f"Successfully executed: {{cmd}}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error executing {{cmd}}: {{e}}")
-
-    # Get current working directory and create project path
-    current_dir = Path.cwd()
-    project_dir = current_dir / "myproject"
-
-    # Create project directory
-    try:
-        project_dir.mkdir(exist_ok=True)
-        print(f"Created project directory: {REPO_DIR}")
-    except Exception as e:
-        print(f"Error creating project directory: {{e}}")
-
-    # Change to project directory
-    try:
-        os.chdir(project_dir)
-        print(f"Changed directory to: {REPO_DIR}")
-    except Exception as e:
-        print(f"Error changing directory: {{e}}")
-
-    # Create virtual environment using uv
-    run_command("uv venv")
-
-    # Activate virtual environment
-    venv_activate_path = project_dir / ".venv" / "Scripts" / "activate"
-    if os.name == 'nt':  # Windows
-        activate_cmd = f"call {{venv_activate_path}}"
-    else:  # Unix-like
-        activate_cmd = f"source {{venv_activate_path}}"
-
-    # Initialize project with uv
-    run_command("uv init")
-
-    # Install packages
-    packages = ["requests", "rich", "python-dotenv"]
-    for package in packages:
-        run_command(f"uv add {{package}}")
-
-    print(f"\\nProject setup complete in {REPO_DIR}")
-    print("To activate the virtual environment, run:")
-    print(f"{{activate_cmd}}")
-
-    Important Notes:
-    • Always handle paths cross-platform using pathlib, and adapt to Windows by replacing leading 'c' with drive 'C:' if needed.
-    • Avoid terminating the script with exit commands.
-    • Keep the final script concise and readable.
-    • Output must be valid Python code in a code block labeled as Python Script.
-    Input: {bash_command}
-    Output:
-    """
-    # rr("Prompt")
-    ic(bash_command)
+    project_dir = get_constant("PROJECT_DIR")
+    with open(file_path, "r") as file:
+        prompt_string = file.read()
+    prompt_string += f"Your project directory is {project_dir}. You need to make sure that all files you create and work you do is done in that directory. \n"
+    prompt_string += f"Your bash command is: {bash_command}\n"
+    temp= input(f" The prompt is: {prompt_string}")
     return prompt_string
 
 async def generate_script_with_llm(prompt: str) -> str:
@@ -273,7 +182,7 @@ class BashTool(BaseAnthropicTool):
             if self.display:
                 self.display.add_message("user", f"Processing command: {command}")
 
-            prompt = read_prompt_from_file(PROMPT_FILE, command)
+            prompt = read_prompt_from_file(BASH_PROMPT_FILE, command)
             response = await generate_script_with_llm(prompt)
             script_type, script_code = parse_llm_response(response)
 
@@ -300,6 +209,7 @@ class BashTool(BaseAnthropicTool):
 def save_successful_code(script_code: str) -> str:
     """Save successfully executed Python code to a file."""
     # Create directory if it doesn't exist
+    PROJECT_DIR = get_constant("PROJECT_DIR")
     save_dir = WORKER_DIR / "llm_gen_code"
     save_dir.mkdir(exist_ok=True)
     ic(script_code)

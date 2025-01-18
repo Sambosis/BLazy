@@ -1,10 +1,8 @@
 from rich.live import Live
 from rich.layout import Layout
 from rich.panel import Panel
-from rich.console import Console
 from rich.text import Text
 from rich import box
-from rich.table import Table
 from queue import Queue
 import asyncio
 
@@ -81,7 +79,7 @@ class AgentDisplay:
     def create_message_panel(self, messages, title, style):
         """Create a panel for messages"""
         message_text = Text()
-        for msg in messages[-10:]:  # Show last 10 messages
+        for msg in messages[-3:]:  # Show last 10 messages
             message_text.append(f"{msg}\n", style=style)
 
         return Panel(
@@ -106,22 +104,20 @@ class AgentDisplay:
 
     async def update_display(self, live):
         """Update the display with new messages"""
+    async def update_display(self, live, stop_event=None):
+        """Update the display with new messages"""
         self.live = live  # Set the live attribute
         while True:
+            if stop_event and stop_event.is_set():
+                break
             if not self.message_queue.empty():
                 msg_type, content = self.message_queue.get()
                 if msg_type == "user":
-                    # self.clear_messages("user")
-                    # await asyncio.sleep(delay=0.1)
-                    self.user_messages= self.user_messages[-6:]
                     self.user_messages.append(content)
-                    await asyncio.sleep(delay=0.1)
                 elif msg_type == "assistant":
                     self.assistant_messages.append(content)
-                    await asyncio.sleep(delay=0.1)
                 elif msg_type == "tool":
                     self.tool_results.append(content)
-                    await asyncio.sleep(delay=0.1)
                 
                 # Force an immediate layout update
                 live.update(self.create_layout())
@@ -129,6 +125,8 @@ class AgentDisplay:
                 await asyncio.sleep(0.05)
             else:
                 await asyncio.sleep(0.1)
+                await asyncio.sleep(0.1)
+
 
     def add_message(self, msg_type, content):
         """
@@ -162,7 +160,7 @@ class AgentDisplay:
         if layout_name == "tool" or "all":
             self.tool_results.clear()
         # Force an immediate layout update
-        # self.live.update(self.create_layout())
+        self.live.update(self.create_layout())
 
 
             

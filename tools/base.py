@@ -1,7 +1,7 @@
 ## base.py
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, fields, replace
-from email import message
+
 from typing import Any, Optional, Dict
 
 

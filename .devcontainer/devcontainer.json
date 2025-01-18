@@ -1,6 +1,42 @@
 {
+  "name": "Python Development",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
   "tasks": {
-    "build": "pip install uv",
-    "launch": "uv run loop_live.py"
-  }
+    "build": "python -m pip install --user pipx && python -m pipx install uv",
+    "launch": "if [ -f loop_live.py ]; then uv run loop_live.py; else echo 'loop_live.py not found'; exit 1; fi"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "forwardPorts": [],
+  "postCreateCommand": "pip install --user -r requirements.txt"
+}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "forwardPorts": [],
+  "postCreateCommand": "pip install --user -r requirements.txt"
+}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "forwardPorts": [],
+  "postCreateCommand": "pip install --user -r requirements.txt"
 }

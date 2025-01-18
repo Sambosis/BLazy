@@ -8,7 +8,7 @@ from icecream import ic
 from rich import print as rr
 import json
 from pydantic import BaseModel
-
+from config import get_constant, set_constant
 class ProjectCommand(str, Enum):
     SETUP_PROJECT = "setup_project"
     ADD_DEPENDENCIES = "add_additional_depends"
@@ -182,8 +182,8 @@ class ProjectSetupTool(BaseAnthropicTool):
         """
         try:
             # Convert path string to Path object
-            project_path = Path(project_path)
-            
+            # project_path = Path(project_path)
+            project_path = Path(get_constant("PROJECT_DIR"))
             # Execute the appropriate command
             if command == ProjectCommand.SETUP_PROJECT:
                 result_data = await self.setup_project(project_path, packages)

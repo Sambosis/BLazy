@@ -12,7 +12,7 @@ from .base import (
     ToolResult,
 )
 
-from load_constants import WORKER_DIR, ICECREAM_OUTPUT_FILE, write_to_file
+from load_constants import write_to_file
 
 
 class ToolCollection:
@@ -40,10 +40,9 @@ class ToolCollection:
         if not tool:
             return ToolFailure(error=f"Tool {name} is invalid")
         try:
-            ic(tool_input)
+            # ic(tool_input)
             return await tool(**tool_input)
         except ToolError as e:
             return ToolFailure(error=e.message)
     def get_tool_names_as_string(self) -> str:
         return ", ".join(self.tool_map.keys())
-#"C:/repo/code_test/code_context_manager.py"
