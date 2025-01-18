@@ -31,3 +31,6 @@ dependencies = [
     "unimport",
 ]
 
+[tool.uv.workspace]
+members = ["repo/blazie"]
+

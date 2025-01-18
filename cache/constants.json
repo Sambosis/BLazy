@@ -22,6 +22,6 @@
     "MAX_SUMMARY_MESSAGES": 40,
     "MAX_SUMMARY_TOKENS": 8000,
     "LOGS_DIR": "C:\\mygit\\BLazy\\logs",
-    "PROJECT_DIR": "C:\\mygit\\BLazy\\repo\\vineppo",
+    "PROJECT_DIR": "C:\\mygit\\BLazy\\repo\\blazie",
     "PROMPTS_DIR": "C:\\mygit\\BLazy\\prompts"
 }

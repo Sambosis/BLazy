@@ -5,6 +5,7 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Literal, get_args
 from anthropic.types.beta import BetaToolTextEditor20241022Param
+from flask import g
 from .base import BaseAnthropicTool, ToolError, ToolResult
 from .run import maybe_truncate
 from typing import List, Optional
@@ -15,7 +16,7 @@ from rich import print as rr
 import datetime
 import json
 from load_constants import  write_to_file, ICECREAM_OUTPUT_FILE
-from config import get_constant, set_constant  # Updated import
+from config import get_constant, set_constant, REPO_DIR, PROJECT_DIR, LOGS_DIR  # Updated import
 
 # Reconfigure stdout to use UTF-8 encoding
 sys.stdout.reconfigure(encoding='utf-8')
@@ -32,9 +33,11 @@ Command = Literal[
     "undo_edit",
 ]
 SNIPPET_LINES: int = 4
-LOGS_DIR = Path(get_constant('LOGS_DIR'))
-LOG_FILE = LOGS_DIR / "file_creation_log.json"
+logs_dir = Path(get_constant('LOGS_DIR'))
+logs_dir = Path.cwd() / logs_dir
+LOG_FILE = logs_dir / "file_creation_log.json"
 PROJECT_DIR = Path(get_constant('PROJECT_DIR'))
+PROJECT_DIR = Path.cwd() / PROJECT_DIR
 
 
 # set_constant('LOG_FILE', str(LOG_FILE))  # Ensure LOG_FILE is a string path
@@ -120,10 +123,18 @@ class EditTool(BaseAnthropicTool):
         """
 
         # if path contains repo then drop everthing including repo before repo
-        if "repo" in path:
-            path = path.split("repo")[1]
-        path = PROJECT_DIR / path
-        return path
+        try:
+            # Convert to Path object for robust path handling
+            p = Path(path)
+            # If absolute path, ensure it's within PROJECT_DIR
+            if p.is_absolute():
+                if not str(p).startswith(str(PROJECT_DIR)):
+                    raise ValueError(f"Path must be within {PROJECT_DIR}")
+                return PROJECT_DIR / p 
+            # If relative path, make it relative to PROJECT_DIR
+            return PROJECT_DIR / p
+        except Exception as e:
+            raise ValueError(f"Invalid path: {e}")
 
 
     
@@ -234,7 +245,7 @@ class EditTool(BaseAnthropicTool):
             return ToolResult(output=None, error=str(e), base64_image=None)
     def insert(self, path: Path, insert_line: int, new_str: str) -> ToolResult:
         """Implement the insert command, which inserts new_str at the specified line in the file content."""
-        # path = self.normalize_path(path)
+        path = self.normalize_path(path)
         file_text = self.read_file(path).expandtabs()
         new_str = new_str.expandtabs()
         file_text_lines = file_text.split("\n")
@@ -286,7 +297,7 @@ class EditTool(BaseAnthropicTool):
         return os.path.normpath(filename)
     def undo_edit(self, path: Path) -> ToolResult:
         """Implement the undo_edit command."""
-        # path = self.normalize_path(path)
+        path = self.normalize_path(path)
         if not self._file_history[path]:
             raise ToolError(f"No edit history found for {path}.")
 
@@ -307,6 +318,8 @@ class EditTool(BaseAnthropicTool):
         """Write the content of a file to a given path; raise a ToolError if an error occurs."""
         try:
             # create the directory of path if it doesn't exist
+            project_path = Path(get_constant("PROJECT_DIR"))
+            path = project_path / path
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(file, encoding="utf-8")
         except Exception as e:

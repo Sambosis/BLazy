@@ -50,11 +50,7 @@ load_dotenv()
 install()
 
 ICECREAM_OUTPUT_FILE = Path.cwd() / "debug_log.json"
-# JOURNAL_FILE = Path.cwd() / "journal" / "journal.log"
-# JOURNAL_ARCHIVE_FILE = Path.cwd() / "journal" / "journal.log.archive"
 
-# JOURNAL_SYSTEM_PROMPT_FILE = Path.cwd() / "journal" / "journal_system_prompt.md"
-# PROMPT_NAME = None
 with open(SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
@@ -89,7 +85,7 @@ ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
     tool_result_content = []
     is_error = False
-    ic(result)
+    # ic(result)
     if isinstance(result, str):
         is_error = True
         tool_result_content.append({"type": "text", "text": result})
@@ -205,7 +201,7 @@ def truncate_message_content(content: Any, max_length: int = 20000) -> Any:
 
 async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key: str, max_tokens: int = 8000, display: AgentDisplay) -> List[BetaMessageParam]:
     """Main loop for agentic sampling."""
-    ic(messages)
+    # ic(messages)
     try:
         tool_collection = ToolCollection(
             BashTool(display=display),
@@ -214,7 +210,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             WebNavigatorTool(),
             ProjectSetupTool()
         )
-        ic(tool_collection)
+        # ic(tool_collection)
         display.add_message("system", tool_collection.get_tool_names_as_string())
         system = BetaTextBlockParam(type="text", text=SYSTEM_PROMPT_FILE)
         output_manager = OutputManager(display)
@@ -252,7 +248,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             try:
                 tool_collection.to_params()
 
-                ic(messages)
+                # ic(messages)
 
                 truncated_messages = [
                     {"role": msg["role"], "content": truncate_message_content(msg["content"])}
@@ -358,6 +354,8 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                         )
                         await asyncio.sleep(0.5)
                         display.live.start()
+                        await asyncio.sleep(10.5)
+
                         # output_manager.format_tool_output(result, content_block["name"])
                         tool_result = _make_api_tool_result(result, content_block["id"])
                         ic(tool_result)
@@ -561,10 +559,10 @@ async def run_sampling_loop(task: str, display: AgentDisplay) -> List[BetaMessag
     """Run the sampling loop with clean output handling."""
     api_key = os.getenv("ANTHROPIC_API_KEY")
     messages = []
-    ic(messages)
+    # ic(messages)
     if not api_key:
         raise ValueError("API key not found. Please set the ANTHROPIC_API_KEY environment variable.")
-    ic(messages.append({"role": "user","content": task}))
+    messages.append({"role": "user","content": task})
     display.add_message("user", task)
  
 
@@ -611,7 +609,7 @@ async def main_async():
             task = f.read()
     project_dir = set_project_dir(filename)
     set_constant("PROJECT_DIR", str(project_dir))
-    
+    task += f"Your project directory is {project_dir}. You need to make sure that all files you create and work you do is done in that directory. \n"
     # Create the display instance and setup the layout
     display = AgentDisplay()  # Create instance of AgentDisplay
     layout = display.create_layout()  # Create initial layout

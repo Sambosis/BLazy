@@ -11,3 +11,4 @@ wheels/
 *log.json*
 ignore/
 llm_gen_code/
+repo/
