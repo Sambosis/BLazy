@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 from icecream import ic, install
 from rich import print as rr
 from rich.prompt import Prompt, Confirm
-from load_constants import SYSTEM_PROMPT
+# from load_constants import SYSTEM_PROMPT, BASH_PROMPT_FILE
 from tools import (
     BashTool,
     EditTool,
@@ -92,7 +92,7 @@ def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
     else:
         if result.output:
             tool_result_content.append({"type": "text", "text": result.output})
-        if result.base64_image:
+        if hasattr(result, 'base64_image') and result.base64_image:
             tool_result_content.append({
                 "type": "image",
                 "source": {
@@ -161,7 +161,7 @@ class TokenTracker:
         # Send to display using system message type
         self.displayA.add_message("system", token_display)
 
-with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f):
+with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     JOURNAL_SYSTEM_PROMPT = f.read()
 
 
@@ -475,24 +475,24 @@ def _maybe_filter_to_n_most_recent_images(
     images_to_remove = 0
     images_found = 0
     for tool_result in reversed(tool_result_blocks):
-      if isinstance(tool_result.get("content"), list):
-        for content in reversed(tool_result.get("content", [])):
-          if isinstance(content, dict) and content.get("type") == "image":
-            images_found += 1
+        if isinstance(tool_result.get("content"), list):
+            for content in reversed(tool_result.get("content", [])):
+                if isinstance(content, dict) and content.get("type") == "image":
+                    images_found += 1
 
     images_to_remove = max(0, images_found - images_to_keep)
 
     removed = 0
     for tool_result in tool_result_blocks:
         if isinstance(tool_result.get("content"), list):
-          new_content = []
-          for content in tool_result.get("content", []):
+            new_content = []
+            for content in tool_result.get("content", []):
                 if isinstance(content, dict) and content.get("type") == "image":
                     if removed < images_to_remove:
                         removed += 1
                         continue
                 new_content.append(content)
-          tool_result["content"] = new_content
+            tool_result["content"] = new_content
 
 async def summarize_recent_messages(messages: List[BetaMessageParam], display: AgentDisplay) -> str:
 

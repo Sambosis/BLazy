@@ -1,3 +1,4 @@
+from os import mkdir
 from pathlib import Path
 import json
 
@@ -24,7 +25,7 @@ SCRIPTS_DIR = TOP_LEVEL_DIR / 'scripts'
 TESTS_DIR = TOP_LEVEL_DIR / 'tests'
 LOGS_DIR = TOP_LEVEL_DIR / 'logs'  # Ensure LOGS_DIR is based on PROJECT_DIR
 PROMPTS_DIR = TOP_LEVEL_DIR / 'prompts'
-
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 JOURNAL_MODEL = "claude-3-5-haiku-latest"
 SUMMARY_MODEL = "claude-3-5-haiku-latest"
 MAIN_MODEL = "claude-3-5-sonnet-latest"
@@ -38,6 +39,7 @@ MAX_SUMMARY_TOKENS = 8000
 # create a cache directory if it does not exist
 CACHE_DIR = TOP_LEVEL_DIR / 'cache'  # Changed from TOP_LEVEL_DIR / 'cache'
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 # function to write the constants to a file
 def write_constants_to_file():

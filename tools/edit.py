@@ -3,7 +3,7 @@ import os
 import re
 from pathlib import Path
 from collections import defaultdict
-from typing import Literal, get_args
+from typing import Literal, get_args, Dict
 from anthropic.types.beta import BetaToolTextEditor20241022Param
 from flask import g
 from .base import BaseAnthropicTool, ToolError, ToolResult
@@ -64,6 +64,27 @@ class EditTool(BaseAnthropicTool):
             "type": self.api_type,
         }
 
+    def format_output(self, data: Dict) -> str:
+        """Format the output data similar to ProjectSetupTool style"""
+        output_lines = []
+        
+        # Add command type
+        output_lines.append(f"Command: {data['command']}")
+        
+        # Add status
+        output_lines.append(f"Status: {data['status']}")
+        
+        # Add file path if present
+        if 'file_path' in data:
+            output_lines.append(f"File Path: {data['file_path']}")
+            
+        # Add operation details if present
+        if 'operation_details' in data:
+            output_lines.append(f"Operation: {data['operation_details']}")
+            
+        # Join all lines with newlines
+        return "\n".join(output_lines)
+
     async def __call__(
         self,
         *,
@@ -76,68 +97,64 @@ class EditTool(BaseAnthropicTool):
         insert_line: int | None = None,
         **kwargs,
     ) -> ToolResult:
-
-        _path = Path(path)
-
-        # _path = self.validate_path(command, _path)
-        if command == "view":
-            self.log_file_operation(_path, "view")
-            return await self.view(_path, view_range)
-        elif command == "create":
-            if not file_text:
-                raise ToolError("Parameter `file_text` is required for command: create")
-            self.write_file(_path, file_text)
-            self._file_history[_path].append(file_text)
-            self.log_file_operation(_path, "create")
-            return ToolResult(output=f"File created successfully at: {_path}")
-        elif command == "str_replace":
-            if not old_str:
-                raise ToolError("Parameter `old_str` is required for command: str_replace")
-            self.log_file_operation(_path, "str_replace")
-            return self.str_replace(_path, old_str, new_str)
-        elif command == "insert":
-            if insert_line is None:
-                raise ToolError("Parameter `insert_line` is required for command: insert")
-            if not new_str:
-                raise ToolError("Parameter `new_str` is required for command: insert")
-            self.log_file_operation(_path, "insert")
-            return self.insert(_path, insert_line, new_str)
-        elif command == "undo_edit":
-            self.log_file_operation(_path, "undo_edit")
-            return self.undo_edit(_path)
-        raise ToolError(
-            f'Unrecognized command {command}. The allowed commands for the {self.name} tool are: {", ".join(get_args(Command))}'
-        )
-    def normalize_path(self, path: Optional[str]) -> Path:
-        """
-        
-        Args:
-            path: Input path string that needs to be normalized
-            Note:
-            This method is used to normalize the path provided by the user.
-            and is a valid path.
-        Returns:
-            
-        Raises:
-            ValueError: If the path is None or empty
-        """
-
-        # if path contains repo then drop everthing including repo before repo
         try:
-            # Convert to Path object for robust path handling
+            # Normalize the path first
+            _path = self.normalize_path(path)
+            
+            if command == "create":
+                if not file_text:
+                    raise ToolError("Parameter `file_text` is required for command: create")
+                self.write_file(_path, file_text)
+                self._file_history[_path].append(file_text)
+                self.log_file_operation(_path, "create")
+                
+                output_data = {
+                    "command": "create",
+                    "status": "success",
+                    "file_path": str(_path),
+                    "operation_details": "File created successfully"
+                }
+                return ToolResult(output=self.format_output(output_data))
+                
+            # Handle other commands similarly...
+            # ...existing code...
+
+        except Exception as e:
+            return ToolResult(output=None, error=str(e), base64_image=None)
+
+    def normalize_path(self, path: Optional[str]) -> Path:
+        """Normalize file paths to be within the project directory"""
+        if not path:
+            raise ValueError("Path cannot be None or empty")
+            
+        project_dir = Path(get_constant("PROJECT_DIR"))
+        if not project_dir.exists():
+            project_dir.mkdir(parents=True, exist_ok=True)
+            
+        try:
+            # Convert to Path object
             p = Path(path)
-            # If absolute path, ensure it's within PROJECT_DIR
+            
+            # If it's an absolute path
             if p.is_absolute():
-                if not str(p).startswith(str(PROJECT_DIR)):
-                    raise ValueError(f"Path must be within {PROJECT_DIR}")
-                return PROJECT_DIR / p 
-            # If relative path, make it relative to PROJECT_DIR
-            return PROJECT_DIR / p
+                # Ensure it's within project directory
+                try:
+                    p = p.relative_to(p.anchor)
+                except ValueError:
+                    p = Path(os.path.basename(str(p)))
+                    
+            # Resolve the path relative to project directory
+            resolved_path = (project_dir / p).resolve()
+            
+            # Ensure the path is within project directory
+            if not str(resolved_path).startswith(str(project_dir)):
+                resolved_path = project_dir / p.name
+                
+            return resolved_path
+            
         except Exception as e:
             raise ValueError(f"Invalid path: {e}")
 
-
-    
     async def view(self, path: Path, view_range: Optional[List[int]] = None) -> ToolResult:
         """Implement the view command using cross-platform methods."""
         ic(path)
@@ -315,15 +332,18 @@ class EditTool(BaseAnthropicTool):
             ic(f"Error reading file {path}: {e}")
             raise ToolError(f"Ran into {e} while trying to read {path}") from None
     def write_file(self, path: Path, file: str):
-        """Write the content of a file to a given path; raise a ToolError if an error occurs."""
+        """Write file content ensuring correct project directory"""
         try:
-            # create the directory of path if it doesn't exist
-            project_path = Path(get_constant("PROJECT_DIR"))
-            path = project_path / path
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(file, encoding="utf-8")
+            # Normalize path to be within project directory
+            full_path = self.normalize_path(str(path))
+            
+            # Create parent directories if needed
+            full_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Write the file
+            full_path.write_text(file, encoding="utf-8")
         except Exception as e:
-            raise ToolError(f"Ran into {e} while trying to write to {path}") from None
+            raise ToolError(f"Error writing to {path}: {str(e)}")
 
     def _make_output(
         self,

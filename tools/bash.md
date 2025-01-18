@@ -83,6 +83,8 @@ You are an expert in converting Bash commands that use 'uv' (a hypothetical pack
     print("To activate the virtual environment, run:")
     print(f"{{activate_cmd}}")
 
+    # Ensure all references to BASH_PROMPT_FILE are correct
+
     Important Notes:
     • Always handle paths cross-platform using pathlib, and adapt to Windows by replacing leading 'c' with drive 'C:' if needed.
     • Avoid terminating the script with exit commands.

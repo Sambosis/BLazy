@@ -32,5 +32,5 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["repo/blazie"]
+members = ["repo/blazie", "repo/blazie2", "repo/prompt", "repo/rap"]
 
