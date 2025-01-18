@@ -8,6 +8,7 @@ import json
 import logging
 from .base import BaseAnthropicTool, ToolResult, ToolError
 from rich import print as rr
+from rich.prompt import Prompt
 
 # Configure logging
 logging.basicConfig(level=logging.CRITICAL)
@@ -162,11 +163,13 @@ class WindowsNavigationTool:
                 success_msg += f" with target '{target}'"
             
             logger.info(success_msg)
+            rr(success_msg)
             return ToolResult(output=success_msg)
 
         except Exception as e:
             error_msg = f"Failed to execute {action}: {str(e)}"
             logger.error(error_msg)
+            rr(f"[red]Error:[/red] {error_msg}")
             return ToolResult(error=error_msg)
 
     def get_session_history(self) -> str:

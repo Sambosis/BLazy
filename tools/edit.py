@@ -13,6 +13,8 @@ import sys
 from rich import print as rr
 import datetime
 import json
+from rich.prompt import Prompt
+
 # Reconfigure stdout to use UTF-8 encoding
 sys.stdout.reconfigure(encoding='utf-8')
 # include the context for the icecream debugger
