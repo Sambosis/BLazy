@@ -9,7 +9,7 @@
     "SYSTEM_PROMPT_FILE": "C:\\mygit\\BLazy\\system_prompt\\system_prompt.md",
     "BASH_PROMPT_DIR": "C:\\mygit\\BLazy\\tools",
     "BASH_PROMPT_FILE": "C:\\mygit\\BLazy\\tools\\bash.md",
-    "LLM_GEN_CODE_DIR": "C:\\mygit\\BLazy\\repo\\rap\\llm_gen_code",
+    "LLM_GEN_CODE_DIR": "C:\\mygit\\BLazy\\repo\\codeorganize\\llm_gen_code",
     "TOOLS_DIR": "C:\\mygit\\BLazy\\tools",
     "SCRIPTS_DIR": "C:\\mygit\\BLazy\\scripts",
     "TESTS_DIR": "C:\\mygit\\BLazy\\tests",
@@ -22,6 +22,6 @@
     "MAX_SUMMARY_MESSAGES": 40,
     "MAX_SUMMARY_TOKENS": 8000,
     "LOGS_DIR": "C:\\mygit\\BLazy\\logs",
-    "PROJECT_DIR": "C:\\mygit\\BLazy\\repo\\rap",
+    "PROJECT_DIR": "C:\\mygit\\BLazy\\repo\\codeorganize",
     "PROMPTS_DIR": "C:\\mygit\\BLazy\\prompts"
 }
