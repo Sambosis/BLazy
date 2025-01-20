@@ -5,7 +5,6 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Literal, get_args, Dict
 from anthropic.types.beta import BetaToolTextEditor20241022Param
-from flask import g
 from .base import BaseAnthropicTool, ToolError, ToolResult
 from .run import maybe_truncate
 from typing import List, Optional
@@ -97,6 +96,7 @@ class EditTool(BaseAnthropicTool):
         insert_line: int | None = None,
         **kwargs,
     ) -> ToolResult:
+        """Execute the specified command with proper error handling and formatted output."""
         try:
             # Normalize the path first
             _path = self.normalize_path(path)
@@ -115,45 +115,66 @@ class EditTool(BaseAnthropicTool):
                     "operation_details": "File created successfully"
                 }
                 return ToolResult(output=self.format_output(output_data))
-                
-            # Handle other commands similarly...
-            # ...existing code...
+
+            elif command == "view":
+                result = await self.view(_path, view_range)
+                output_data = {
+                    "command": "view",
+                    "status": "success",
+                    "file_path": str(_path),
+                    "operation_details": result.output if result.output else "No content to display"
+                }
+                return ToolResult(output=self.format_output(output_data))
+
+            elif command == "str_replace":
+                if not old_str:
+                    raise ToolError("Parameter `old_str` is required for command: str_replace")
+                result = self.str_replace(_path, old_str, new_str)
+                output_data = {
+                    "command": "str_replace",
+                    "status": "success",
+                    "file_path": str(_path),
+                    "operation_details": f"Replaced '{old_str}' with '{new_str}'"
+                }
+                return ToolResult(output=self.format_output(output_data))
+
+            elif command == "insert":
+                if insert_line is None:
+                    raise ToolError("Parameter `insert_line` is required for command: insert")
+                if not new_str:
+                    raise ToolError("Parameter `new_str` is required for command: insert")
+                result = self.insert(_path, insert_line, new_str)
+                output_data = {
+                    "command": "insert",
+                    "status": "success",
+                    "file_path": str(_path),
+                    "operation_details": f"Inserted text at line {insert_line}"
+                }
+                return ToolResult(output=self.format_output(output_data))
+
+            elif command == "undo_edit":
+                result = self.undo_edit(_path)
+                output_data = {
+                    "command": "undo_edit",
+                    "status": "success",
+                    "file_path": str(_path),
+                    "operation_details": "Last edit undone successfully"
+                }
+                return ToolResult(output=self.format_output(output_data))
+
+            else:
+                raise ToolError(
+                    f'Unrecognized command {command}. The allowed commands are: {", ".join(get_args(Command))}'
+                )
 
         except Exception as e:
-            return ToolResult(output=None, error=str(e), base64_image=None)
-
-    def normalize_path(self, path: Optional[str]) -> Path:
-        """Normalize file paths to be within the project directory"""
-        if not path:
-            raise ValueError("Path cannot be None or empty")
-            
-        project_dir = Path(get_constant("PROJECT_DIR"))
-        if not project_dir.exists():
-            project_dir.mkdir(parents=True, exist_ok=True)
-            
-        try:
-            # Convert to Path object
-            p = Path(path)
-            
-            # If it's an absolute path
-            if p.is_absolute():
-                # Ensure it's within project directory
-                try:
-                    p = p.relative_to(p.anchor)
-                except ValueError:
-                    p = Path(os.path.basename(str(p)))
-                    
-            # Resolve the path relative to project directory
-            resolved_path = (project_dir / p).resolve()
-            
-            # Ensure the path is within project directory
-            if not str(resolved_path).startswith(str(project_dir)):
-                resolved_path = project_dir / p.name
-                
-            return resolved_path
-            
-        except Exception as e:
-            raise ValueError(f"Invalid path: {e}")
+            error_data = {
+                "command": command,
+                "status": "error",
+                "file_path": str(_path) if '_path' in locals() else path,
+                "operation_details": f"Error: {str(e)}"
+            }
+            return ToolResult(output=self.format_output(error_data))
 
     async def view(self, path: Path, view_range: Optional[List[int]] = None) -> ToolResult:
         """Implement the view command using cross-platform methods."""
@@ -331,15 +352,59 @@ class EditTool(BaseAnthropicTool):
         except Exception as e:
             ic(f"Error reading file {path}: {e}")
             raise ToolError(f"Ran into {e} while trying to read {path}") from None
+
+    def normalize_path(self, path: str | Path) -> Path:
+        """
+        Normalize a path to be within the project directory.
+        Args:
+            path: Path to normalize (can be string or Path object)
+        Returns:
+            Normalized Path object within project directory
+        """
+        try:
+            # Get project directory from config
+            project_dir = Path(get_constant('PROJECT_DIR'))
+            if not project_dir.exists():
+                project_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Convert input to Path object
+            input_path = Path(path)
+            
+            # If absolute path, make relative to project dir
+            if input_path.is_absolute():
+                try:
+                    # Try to make relative to project dir
+                    relative_path = input_path.relative_to(project_dir)
+                    result_path = project_dir / relative_path
+                except ValueError:
+                    # If not under project dir, take the name only
+                    result_path = project_dir / input_path.name
+            else:
+                # For relative paths, prepend project dir
+                result_path = project_dir / input_path
+            
+            # Ensure result is within project directory
+            try:
+                result_path.relative_to(project_dir)
+            except ValueError:
+                raise ValueError(f"Path {result_path} must be within project directory {project_dir}")
+                
+            return result_path
+
+        except Exception as e:
+            ic(f"Path normalization error: {e}")
+            raise ValueError(f"Failed to normalize path '{path}': {str(e)}")
+
     def write_file(self, path: Path, file: str):
         """Write file content ensuring correct project directory"""
         try:
             # Normalize path to be within project directory
-            full_path = self.normalize_path(str(path))
-            
+            ic(path)
+            full_path = self.normalize_path(path)
+            ic(full_path)
             # Create parent directories if needed
             full_path.parent.mkdir(parents=True, exist_ok=True)
-            
+            ic(file)
             # Write the file
             full_path.write_text(file, encoding="utf-8")
         except Exception as e:

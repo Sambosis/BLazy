@@ -173,7 +173,7 @@ class ProjectSetupTool(BaseAnthropicTool):
         *,
         command: ProjectCommand,
         project_path: str,
-        packages: List[str] = ["flask", "pandas", "flask-wtf", "python-dotenv"],
+        packages: List[str] = ["python-dotenv", "anthropic"],
         python_filename: str = "app.py",
         **kwargs,
     ) -> ToolResult:

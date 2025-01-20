@@ -83,15 +83,27 @@ ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
 
 def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
+    """Create a tool result dictionary with proper error handling."""
     tool_result_content = []
     is_error = False
-    # ic(result)
-    if isinstance(result, str):
+
+    if result is None:
         is_error = True
-        tool_result_content.append({"type": "text", "text": result})
-    else:
-        if result.output:
-            tool_result_content.append({"type": "text", "text": result.output})
+        tool_result_content.append({
+            "type": "text", 
+            "text": "Tool execution resulted in None"
+        })
+    elif isinstance(result, str):
+        is_error = True
+        tool_result_content.append({
+            "type": "text", 
+            "text": result
+        })
+    elif hasattr(result, 'output') and result.output:
+        tool_result_content.append({
+            "type": "text", 
+            "text": result.output
+        })
         if hasattr(result, 'base64_image') and result.base64_image:
             tool_result_content.append({
                 "type": "image",
@@ -101,6 +113,7 @@ def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
                     "data": result.base64_image,
                 }
             })
+
     return {
         "type": "tool_result",
         "content": tool_result_content,
@@ -348,11 +361,27 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                         display.add_message("tool", f"Calling tool: {content_block['name']}")
                         display.live.stop()
                         await asyncio.sleep(0.5)
-                        result = await tool_collection.run(
-                            name=content_block["name"],
-                            tool_input=content_block["input"],
-                        )
-                        await asyncio.sleep(0.5)
+                        try:
+                            ic(content_block['name'])
+                            ic(content_block["input"])
+                            result = await tool_collection.run(
+                                name=content_block["name"],
+                                tool_input=content_block["input"],
+                            )
+                            # Ensure we have a valid result
+                            if result is None:
+                                result = ToolResult(output="Tool execution failed with no result")
+                            
+                            tool_result = _make_api_tool_result(result, content_block["id"])
+                            ic(tool_result)
+                            tool_result_content.append(tool_result)
+                            
+                            tool_output = result.output if hasattr(result, 'output') else str(result)
+                            # ...existing code...
+                        except Exception as e:
+                            error_result = ToolResult(output=f"Tool execution failed: {str(e)}")
+                            tool_result = _make_api_tool_result(error_result, content_block["id"])
+                            tool_result_content.append(tool_result)
                         display.live.start()
                         await asyncio.sleep(10.5)
 
