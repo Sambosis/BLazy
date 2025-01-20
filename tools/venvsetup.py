@@ -54,7 +54,7 @@ class ProjectSetupTool(BaseAnthropicTool):
             }
         }
 
-    def run_command(self, cmd: str, cwd=None, capture_output=False) -> subprocess.CompletedProcess:
+    def run_command(self, cmd: str, cwd=None, capture_output=True) -> subprocess.CompletedProcess:
         """Helper method to run shell commands safely"""
         try:
             result = subprocess.run(

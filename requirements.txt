@@ -9,3 +9,4 @@ pyperclip>=1.8.2
 regex>=2021.4.4 
 openai>=0.10.0
 playwright>=1.12.2
+uv

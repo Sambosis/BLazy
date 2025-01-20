@@ -54,7 +54,7 @@ ICECREAM_OUTPUT_FILE = Path.cwd() / "debug_log.json"
 with open(SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
-
+filename = ""
 
 def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
     lines = s.split('\n')

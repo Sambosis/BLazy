@@ -14,7 +14,10 @@
     }
   },
   "forwardPorts": [],
-  "postCreateCommand": "pip install --user -r requirements.txt"
+  "postCreateCommand": "pip install --user -r requirements.txt",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/akamai-cli:1": {}
+  }
 }
   },
   "customizations": {
