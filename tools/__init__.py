@@ -7,7 +7,7 @@ from .playwright import WebNavigatorTool
 from .venvsetup import ProjectSetupTool
 #from .gotourl_reports import GoToURLReportsTool
 # from .get_serp import GoogleSearchTool
-# from .windows_navigation import WindowsNavigationTool
+from .windows_navigation import WindowsNavigationTool
 # from .test_navigation_tool import windows_navigate
 
 __all__ = [
@@ -22,6 +22,6 @@ __all__ = [
     "ProjectSetupTool",
     # "GoToURLReportsTool",
     # "GoogleSearchTool",
-    # "WindowsNavigationTool"
+    "WindowsNavigationTool"
     # "windows_navigate"
 ]

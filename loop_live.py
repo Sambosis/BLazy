@@ -29,7 +29,7 @@ from tools import (
     BashTool,
     EditTool,
     GetExpertOpinionTool,
-
+    WindowsNavigationTool,
     # ToolError,
     WebNavigatorTool,
     ProjectSetupTool
@@ -85,6 +85,24 @@ def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
 
+def refresh_context(task):
+    """Combines first message with summaries and file contents into a properly formatted message list"""
+    first_message = task
+    combined_summaries = get_all_summaries()
+    file_contents = extract_files_content()
+    
+    # Create a properly formatted combined message
+    combined_content = f"""Original request: {task}
+    Context and History:
+    {combined_summaries}
+    Current Project Files:
+    {file_contents}"""
+        
+
+    
+    return combined_content  # Return a list with the single combined message
+    
+
 def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
     """Create a tool result dictionary with proper error handling."""
     tool_result_content = []
@@ -124,7 +142,54 @@ def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> Dict:
         "is_error": is_error,
     }
 
+def format_messages_to_string(messages):
+    """
+    Format a list of messages into a formatted string.
 
+    Args:
+        messages (list): List of message dictionaries containing 'role' and 'content'
+
+    Returns:
+        str: Formatted string containing all messages
+    """
+    try:
+        # Use list to build string pieces efficiently
+        output_pieces = []
+
+        for msg in messages:
+            output_pieces.append(f"\n{msg['role'].upper()}:")
+
+            # Handle content based on its type
+            if isinstance(msg["content"], list):
+                for content_block in msg["content"]:
+                    if isinstance(content_block, dict):
+                        if content_block.get("type") == "tool_result":
+                            output_pieces.append(
+                                f"\nTool Result [ID: {content_block.get('name', 'unknown')}]:"
+                            )
+                            for item in content_block.get("content", []):
+                                if item.get("type") == "text":
+                                    output_pieces.append(f"\nText: {item.get('text')}")
+                                elif item.get("type") == "image":
+                                    output_pieces.append(
+                                        "\nImage Source: base64 source too big"
+                                    )
+                        else:
+                            for key, value in content_block.items():
+                                output_pieces.append(f"\n{key}: {value}")
+                    else:
+                        output_pieces.append(f"\n{content_block}")
+            else:
+                output_pieces.append(f"\n{msg['content']}")
+
+            # Add a separator between messages for better readability
+            output_pieces.append("\n" + "-" * 80)
+
+        # Join all pieces with empty string since we've already added newlines
+        return "".join(output_pieces)
+
+    except Exception as e:
+        return f"Error during formatting: {str(e)}"
 
 class TokenTracker:
     def __init__(self, display: AgentDisplay):
@@ -149,33 +214,40 @@ class TokenTracker:
         self.total_input += self.recent_input
         self.total_output += self.recent_output
 
-    def display(self):
+    def display(self, displayA: AgentDisplay):
         """Display token usage with Rich formatting."""
         # Format recent token usage
         recent_usage = [
-            "[bold yellow]Recent Token Usage[/bold yellow] 📊",
-            f"[yellow]Recent Cache Creation:[/yellow] {self.recent_cache_creation:,}",
-            f"[yellow]Recent Cache Retrieval:[/yellow] {self.recent_cache_retrieval:,}",
-            f"[yellow]Recent Input:[/yellow] {self.recent_input:,}",
-            f"[yellow]Recent Output:[/yellow] {self.recent_output:,}",
-            f"[bold yellow]Recent Total:[/bold yellow] {self.recent_cache_creation + self.recent_cache_retrieval + self.recent_input + self.recent_output:,}",
+            "Recent Token Usage 📊",
+            f"Recent Cache Creation: {self.recent_cache_creation:,}",
+            f"Recent Cache Retrieval: {self.recent_cache_retrieval:,}",
+            f"Recent Input: {self.recent_input:,}",
+            f"Recent Output: {self.recent_output:,}",
+            f"Recent Total: {self.recent_cache_creation + self.recent_cache_retrieval + self.recent_input + self.recent_output:,}",
         ]
+        # calculate the total cost of total tokens at this cost Input: $3 / MTok, Output: $15 / MTok, Cache Write: $3.75 / MTok, Cache Read: $0.30 / MTok.  
+        # where / MTok = 1,000,000 tokens for each token type.add()
+        total_cost = (self.total_cache_creation * 3.75 + self.total_cache_retrieval * 0.30 + self.total_input * 3 + self.total_output * 15) / 1_000_000
+        
 
+
+        
         # Format total token usage
         total_usage = [
-            "[bold yellow]Total Token Usage[/bold yellow] 📈",
-            f"[yellow]Total Cache Creation:[/yellow] {self.total_cache_creation:,}",
-            f"[yellow]Total Cache Retrieval:[/yellow] {self.total_cache_retrieval:,}",
-            f"[yellow]Total Input:[/yellow] {self.total_input:,}",
-            f"[yellow]Total Output:[/yellow] {self.total_output:,}",
-            f"[bold yellow]Total Tokens:[/bold yellow] {self.total_cache_creation + self.total_cache_retrieval + self.total_input + self.total_output:,}",
+            "Total Token Usage 📈",
+            f"Total Cache Creation: {self.total_cache_creation:,}",
+            f"Total Cache Retrieval: {self.total_cache_retrieval:,}",
+            # f"Total Input: {self.total_input:,}",
+            f"Total Output: {self.total_output:,}",
+            f"Total Tokens: {self.total_cache_creation + self.total_cache_retrieval + self.total_input + self.total_output:,} with a total cost of ${total_cost:.2f} USD.",
         ]
 
         # Combine the sections with proper spacing
-        token_display = "\n".join(recent_usage) + "\n\n" + "\n".join(total_usage)
+        # token_display = "\n".join(recent_usage) + "\n\n" + "\n".join(total_usage)
+        token_display = f"\n{total_usage}"
         
         # Send to display using system message type
-        self.displayA.add_message("system", token_display)
+        self.displayA.add_message("user", token_display)
 
 with open(JOURNAL_SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     JOURNAL_SYSTEM_PROMPT = f.read()
@@ -205,7 +277,7 @@ def get_journal_contents() -> str:
     except FileNotFoundError:
         return "No journal entries yet."
 
-def truncate_message_content(content: Any, max_length: int = 10000) -> Any:
+def truncate_message_content(content: Any, max_length: int = 300000) -> Any:
     if isinstance(content, str):
         return content[:max_length]
     elif isinstance(content, list):
@@ -215,6 +287,25 @@ def truncate_message_content(content: Any, max_length: int = 10000) -> Any:
                 for k, v in content.items()}
     return content
 
+# Add this near the top of the file with other global variables
+QUICK_SUMMARIES = []
+
+def add_summary(summary: str) -> None:
+    """Add a new summary to the global list with timestamp."""
+    QUICK_SUMMARIES.append(summary.strip())
+
+def get_all_summaries() -> str:
+    """Combine all summaries into a chronological narrative."""
+    if not QUICK_SUMMARIES:
+        return "No summaries available yet."
+    
+    combined = "Here's everything I've done:\n"
+    for entry in QUICK_SUMMARIES:
+        # Format timestamp for readability
+        combined += f"\n{entry}"
+        
+    return combined
+
 async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key: str, max_tokens: int = 8000, display: AgentDisplay) -> List[BetaMessageParam]:
     """Main loop for agentic sampling."""
     # ic(messages)
@@ -223,11 +314,18 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             BashTool(display=display),
             EditTool(display=display),
             GetExpertOpinionTool(),
+            WindowsNavigationTool(),
             WebNavigatorTool(),
             ProjectSetupTool(display=display),
             display=display  # Pass display to ToolCollection
         )
         # ic(tool_collection)
+        # store the task which is the contents of the first message
+        # clear the file log file
+        with open(LOG_FILE, 'w', encoding='utf-8') as f:
+            f.write("")
+        
+        task = messages[0]['content']
         display.add_message("system", tool_collection.get_tool_names_as_string())
         system = BetaTextBlockParam(type="text", text=SYSTEM_PROMPT_FILE)
         output_manager = OutputManager(display)
@@ -271,7 +369,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     {"role": msg["role"], "content": truncate_message_content(msg["content"])}
                     for msg in messages
                 ]
-                await asyncio.sleep(0.2)
+                # await asyncio.sleep(0.2)
                 # display.live.stop()  # Stop the live display
                 # # Ask user if they are done reviewing the info using rich's Confirm.ask
                 # while Confirm.ask("Do you need more time?", default=True):
@@ -322,9 +420,10 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
                     
                     display.add_message("user", display_output)
-                    await asyncio.sleep(delay=0.5)
-                quick_summary = await summarize_recent_messages(messages[-2:], display)
-                display.add_message("assistant",f" {quick_summary}")
+                    await asyncio.sleep(delay=0.2)
+                quick_summary = await summarize_recent_messages(messages[-4:], display)
+                add_summary(quick_summary)  # Store the summary
+                display.add_message("assistant", f"Here is a quick summary of what I did:\n {quick_summary}")
                 await asyncio.sleep(0.2)
                 response = client.beta.messages.create(
                     max_tokens=MAX_SUMMARY_TOKENS,
@@ -334,12 +433,15 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     tools=tool_collection.to_params(),
                     betas=betas,
                 )
-                if len(messages) < 1:
+                if len(messages) < 2:
                     display.clear_messages("all")
 
                 # display.add_message("assistant", response.content[0].text) # Update display
                 # await asyncio.sleep(0.2)
-            
+                
+
+
+
                 response_params = []
                 for block in response.content:
                     if hasattr(block, 'text'):
@@ -354,17 +456,26 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                             "input": block.input
                         })
                 messages.append({"role": "assistant", "content": response_params})
-                messages_file = LOGS_DIR / "messages.json"
-                display.add_message("tool", f"Saving messages to {messages_file}")
-                with open(messages_file, "w") as f:
-                    json.dump(messages, f, indent=4)
+                # write the messags to a file 
+                with open(MESSAGES_FILE, 'w', encoding='utf-8') as f:
+                    message_string = format_messages_to_string(messages)
+                    f.write(message_string)
+                    
+
+
+                    
+                if len(messages) > 22:
+                    last_3_messages = messages[-3:]
+                    new_context = refresh_context(task)
+                    messages = [{"role": "user", "content": new_context}]
+                    messages.extend(last_3_messages)
                 tool_result_content: List[BetaToolResultBlockParam] = []
                 for content_block in response_params:
                     output_manager.format_content_block(content_block)
                     if content_block["type"] == "tool_use":
                         display.add_message("tool", f"Calling tool: {content_block['name']}")
                         display.live.stop()
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(0.1)
                         try:
                             ic(content_block['name'])
                             ic(content_block["input"])
@@ -403,12 +514,11 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                             "tool_use_id": tool_result["tool_use_id"],
                             "is_error": tool_result["is_error"]
                         }]
-                        quick_summary = await summarize_recent_messages(messages[-4:], display)
-                        display.add_message("tool", content=f"{quick_summary}")
+                        
                         # Add descriptive text about the tool usage
                         combined_content.append({
                             "type": "text",
-                            "text": f"{quick_summary} \nTool '{content_block['name']}' was called with input: {json.dumps(content_block['input'])}.\nResult: {_extract_text_from_content(tool_output)}"
+                            "text": f"Tool '{content_block['name']}' was called with input: {json.dumps(content_block['input'])}.\nResult: {_extract_text_from_content(tool_output)}"
                         })
                         
                         # Add a single message with the combined content
@@ -416,8 +526,9 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                             "role": "user",
                             "content": combined_content
                         })
-
                 if not tool_result_content:
+                    await asyncio.sleep(delay=0.2)
+
                     display.live.stop()  # Stop the live display
                     # add a small delay
                     await asyncio.sleep(0.2)
@@ -427,8 +538,8 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     if task.lower() in ["no", "n"]:
                         running = False
                     messages.append({"role": "user", "content": task})
-                # display.clear_messages("user")
-                await asyncio.sleep(0.2)
+                    # display.clear_messages("user")
+                    await asyncio.sleep(0.1)
                 messages_to_display = messages[-2:] if len(messages) > 1 else messages[-1:]
                 # for message in messages_to_display:
                 #     display.add_message("tool", message["content"][0]) # Update display
@@ -447,6 +558,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 # display.live.start()  # Restart the live display
                 # asyncio.sleep(delay=0.5)
                 token_tracker.update(response)
+                token_tracker.display(display)
 
 
 
@@ -461,7 +573,6 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 ic(e.__traceback__.tb_frame.f_locals)
                 display.add_message("tool", ("Error", str(e))) # Update display with error
                 raise
-        token_tracker.display()
         return messages
 
     except Exception as e:
@@ -549,7 +660,7 @@ async def summarize_recent_messages(messages: List[BetaMessageParam], display: A
 
 
     summary_prompt = f"""Please provide a concise casual natural language summary of the messages. 
-    They are the actual LLM messages log of interaction and you will provide between 1 and 3 conversational style sentences imforming someone what was done. 
+    They are the actual LLM messages log of interaction and you will provide between 3 and 5 conversational style sentences imforming someone what was done. 
     Focusing on the actions taken and providing the names of and file, functions or other items that were specifically acted on and
     a basic idea of what action was taken and why. We are goint to call this your SUMMARY_RESPONSE. Your SUMMARY_RESPONSE should be enclosed in XML style tags such as like this <SUMMARY_RESPONSE> and </SUMMARY_RESPONSE>
     Your SUMMARY_RESPONSE should  be phased speaking in the first person like you are informing someone as to what you are doing. You could say somthing like this:
@@ -559,8 +670,7 @@ async def summarize_recent_messages(messages: List[BetaMessageParam], display: A
     I have also updated the great_code.py file with the following changes:
     Added error handling to the function foo() to handle the case when the user enters an invalid input and added a new function called bar() that takes a string as input and returns the string in reverse order.
     </SUMMARY_RESPONSE>
-    
-    
+    The detail of your summary should vary based on the work has been done however always:
     Include:
     1. All file names, functions, directories and paths mentioned
     2. Directory structures created or modified
@@ -671,6 +781,44 @@ async def main_async():
 def main():
     """Main entry point with proper async handling."""
     asyncio.run(main_async())
+
+def extract_files_content() -> str:
+    """Extract contents of all files logged in file_creation_log.json and format them with headers."""
+    try:
+        # Read the log file
+        with open(LOG_FILE, 'r', encoding='utf-8') as f:
+            logs = json.loads(f.read())
+        
+        # Initialize output string
+        output = []
+        
+        # Process each file in the logs
+        for filepath in logs.keys():
+            try:
+                # Convert Windows path to Path object
+                path = Path(filepath)
+                
+                # Skip if file doesn't exist
+                if not path.exists():
+                    continue
+                
+                # Read file content
+                content = path.read_text(encoding='utf-8')
+                
+                # Add file header and content to output
+                output.append(f"# filepath: {filepath}")
+                output.append(content)
+                output.append("\n" + "=" * 80 + "\n")  # Separator between files
+                
+            except Exception as e:
+                print(f"Error processing {filepath}: {str(e)}")
+                continue
+        
+        # Combine all content
+        return "\n".join(output)
+        
+    except Exception as e:
+        return f"Error reading log file: {str(e)}"
 
 if __name__ == "__main__":
     main()

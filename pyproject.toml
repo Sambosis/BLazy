@@ -31,5 +31,5 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["repo/blazie", "repo/blazie2", "repo/prompt", "repo/rap", "repo/create_module", "repo/acsalestracker", "repo/codeorganize", "repo/draggableDashboard", "repo/trackapp", "repo/pygamedemo", "repo/solitaredns", "repo/nerblaster", "repo/glbj"]
+members = ["repo/blazie", "repo/blazie2", "repo/prompt", "repo/rap", "repo/create_module", "repo/acsalestracker", "repo/codeorganize", "repo/draggableDashboard", "repo/trackapp", "repo/pygamedemo", "repo/solitaredns", "repo/nerblaster", "repo/glbj", "repo/mathpygame"]
 

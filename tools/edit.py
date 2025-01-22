@@ -32,9 +32,6 @@ Command = Literal[
     "undo_edit",
 ]
 SNIPPET_LINES: int = 4
-logs_dir = Path(get_constant('LOGS_DIR'))
-logs_dir = Path.cwd() / logs_dir
-LOG_FILE = logs_dir / "file_creation_log.json"
 PROJECT_DIR = Path(get_constant('PROJECT_DIR'))
 PROJECT_DIR = Path.cwd() / PROJECT_DIR
 
@@ -48,16 +45,15 @@ class EditTool(BaseAnthropicTool):
 
     api_type: Literal["text_editor_20241022"] = "text_editor_20241022"
     name: Literal["str_replace_editor"] = "str_replace_editor"
-
+    LOG_FILE = Path(get_constant('LOG_FILE'))
     _file_history: dict[Path, list[str]]
 
     def __init__(self, display=None):
         super().__init__(display)
+        if not self.LOG_FILE.exists():
+            self.LOG_FILE.write_text('[]', encoding='utf-8')
         self._file_history = defaultdict(list)
-        if not LOG_FILE.exists():
-            LOG_FILE.write_text('[]', encoding='utf-8')
-
-
+        
 
     def to_params(self) -> BetaToolTextEditor20241022Param:
         return {
@@ -448,17 +444,21 @@ class EditTool(BaseAnthropicTool):
     def log_file_operation(self, path: Path, operation: str) -> None:
         """Log operations on a file with timestamp."""
         try:
-            # Read existing logs
-            if LOG_FILE.exists():
-                logs = json.loads(LOG_FILE.read_text(encoding='utf-8'))
-            else:
-                logs = {}
+            # Initialize default log structure
+            logs = {}
             
-            path_str = str(path)
-            # Convert to dict if it's still a list (for backward compatibility)
-            if isinstance(logs, list):
-                logs = {}
+            # Read existing logs if file exists and has content
+            if self.LOG_FILE.exists():
+                content = self.LOG_FILE.read_text(encoding='utf-8').strip()
+                if content:  # Only try to parse if there's content
+                    try:
+                        logs = json.loads(content)
+                    except json.JSONDecodeError:
+                        # If JSON is invalid, start fresh with empty dict
+                        logs = {}
 
+            path_str = str(path)
+            
             # Create new entry if file not logged before
             if path_str not in logs:
                 logs[path_str] = {
@@ -473,7 +473,8 @@ class EditTool(BaseAnthropicTool):
             })
             
             # Write updated logs
-            LOG_FILE.write_text(json.dumps(logs, indent=2), encoding='utf-8')
+            self.LOG_FILE.write_text(json.dumps(logs, indent=2), encoding='utf-8')
+            
         except Exception as e:
-            print(f"Warning: Failed to log file operation: {e}")
-            ic(f"Failed to log file operation: {e}")
+            print(f"Warning: Failed to log file operation: {str(e)}")
+            ic(f"Failed to log file operation: {str(e)}")

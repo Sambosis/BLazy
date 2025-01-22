@@ -1,7 +1,6 @@
 # Dish Tracker
 
 A web application prototype for tracking dish machine sales and installations.
-The idea is just for it to be functional, no logging in or security is needed.
 
 
 ## Core Components
@@ -41,5 +40,7 @@ The idea is just for it to be functional, no logging in or security is needed.
   - Payment
   - Installation
   - Monthly Service Fee
-Just worry about the basic functionality. That is what is important.  
+
+
+It should be a dynamic and customizeable site. 
 

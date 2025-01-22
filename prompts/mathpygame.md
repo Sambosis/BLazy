@@ -38,6 +38,7 @@ After each attempt:
 Show step-by-step solution
 Provide detailed explanation
 Highlight key concepts
+Include lots of problems. 
 Progress System:
 Track correct/incorrect answers
 Adjust difficulty based on performance
@@ -48,16 +49,13 @@ Commented code
 Setup instructions
 Small sample problem set for each grade level
 Instructions for adding new problems
-Basic CSS styling
+CSS styling
 Basic Error handling
 Basic Input validation
-Basic Progress tracking implementation
+Progress tracking implementation
 Local storage management
 
 Each step should be focused making a working prototype. 
 
-Does not need to be production ready, just basic functionality.
-No need to test, just get it working.
 If you can identify a next step that would enable the flask app to run and a user to interact with it, then do that next.
-Create the project in the C:\repo\mathpygame folder.
-You will be using Microsoft Windows 11 Operating System.
+

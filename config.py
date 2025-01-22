@@ -26,8 +26,12 @@ TESTS_DIR = TOP_LEVEL_DIR / 'tests'
 LOGS_DIR = TOP_LEVEL_DIR / 'logs'  # Ensure LOGS_DIR is based on PROJECT_DIR
 PROMPTS_DIR = TOP_LEVEL_DIR / 'prompts'
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
-JOURNAL_MODEL = "claude-3-5-haiku-latest"
-SUMMARY_MODEL = "claude-3-5-haiku-latest"
+LOG_FILE = LOGS_DIR / 'file_creation_log.json'
+MESSAGES_FILE = LOGS_DIR / 'messages.json'
+# JOURNAL_MODEL = "claude-3-5-haiku-latest"
+# SUMMARY_MODEL = "claude-3-5-haiku-latest"
+JOURNAL_MODEL = "claude-3-5-sonnet-latest"
+SUMMARY_MODEL = "claude-3-5-sonnet-latest"
 MAIN_MODEL = "claude-3-5-sonnet-latest"
 COMPUTER_USE_BETA_FLAG = "computer-use-2024-10-22"
 PROMPT_CACHING_BETA_FLAG = "prompt-caching-2024-07-31"
@@ -69,6 +73,8 @@ def write_constants_to_file():
         'LOGS_DIR': str(LOGS_DIR),
         'PROJECT_DIR': str(PROJECT_DIR) if PROJECT_DIR else "",
         'PROMPTS_DIR': str(PROMPTS_DIR),
+        'LOG_FILE': str(LOG_FILE),
+        'MESSAGES_FILE': str(MESSAGES_FILE)
     }
     with open(CACHE_DIR / 'constants.json', 'w') as f:
         json.dump(constants, f, indent=4)
