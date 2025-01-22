@@ -43,18 +43,18 @@ class AgentDisplay:
         layout = Layout()
 
         layout.split_column(
-            Layout(name="upper", ratio=2),
-            Layout(name="lower", ratio=1)
+            Layout(name="upper", ratio=3),
+            Layout(name="user", ratio=2)
         )
 
         layout["upper"].split_row(
-            Layout(name="user"),
-            Layout(name="assistant")
+            Layout(name="assistant",ratio=3),
+            Layout(name="tool",ratio=2)
         )
 
         user_panel = self.create_message_panel(
             self.user_messages,
-            "User Messages",
+            "UserTool Messages",
             "bright_green"
         )
 
@@ -72,14 +72,14 @@ class AgentDisplay:
 
         layout["user"].update(user_panel)
         layout["assistant"].update(assistant_panel)
-        layout["lower"].update(tool_panel)
+        layout["tool"].update(tool_panel)
 
         return layout
 
     def create_message_panel(self, messages, title, style):
         """Create a panel for messages"""
         message_text = Text()
-        for msg in messages[-3:]:  # Show last 10 messages
+        for msg in messages[-4:]:  # Show last 10 messages
             message_text.append(f"{msg}\n", style=style)
 
         return Panel(
@@ -92,7 +92,9 @@ class AgentDisplay:
     def create_tool_panel(self, results, title, style):
         """Create a panel for tool results"""
         message_text = Text()
-        for result in results[-5:]:  # Show last 5 results
+        for result in results[-3:]:  # Show last 5 results
+            if len(result) <2 or len(result) > 1000:
+                continue
             message_text.append(f"{result}\n", style=style)
                 
         return Panel(
@@ -102,8 +104,7 @@ class AgentDisplay:
             box=box.ROUNDED
         )
 
-    async def update_display(self, live):
-        """Update the display with new messages"""
+
     async def update_display(self, live, stop_event=None):
         """Update the display with new messages"""
         self.live = live  # Set the live attribute

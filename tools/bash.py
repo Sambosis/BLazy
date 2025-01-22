@@ -15,7 +15,7 @@ from .base import BaseAnthropicTool, ToolError, ToolResult
 from utils.agent_display import AgentDisplay  # Add this line
 from load_constants import WORKER_DIR, write_to_file
 from icecream import ic
-from config import get_constant
+from config import BASH_PROMPT_FILE, get_constant
 
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
@@ -77,67 +77,74 @@ def execute_script(script_type: str, script_code: str, display: AgentDisplay = N
         if display:
             display.add_message("user", "Executing Python script...")
 
-        old_stdout, old_stderr = sys.stdout, sys.stderr
-        redirected_output = io.StringIO()
-        redirected_error = io.StringIO()
-        sys.stdout, sys.stderr = redirected_output, redirected_error
+        # Write the Python script to a temporary file
+        script_file = "temp_script.py"
+        with open(script_file, "w", encoding="utf-8") as f:
+            f.write(script_code)
 
         try:
-            exec(script_code)
-            output_out = redirected_output.getvalue()
-            error_out = redirected_error.getvalue()
-            display.add_message("user", f"Output:\n{output_out}")
-            display.add_message("user", f"Error Message:\n{error_out}")
-            if not error_out:
-                saved_path = save_successful_code(script_code)
-                # output_out += f"\nCode saved to: {saved_path}"
-                # if display:
-                #     display.add_message("user", f"[green]Code saved to:[/green] {saved_path}")
+            # Use subprocess to run the Python script
+            result = subprocess.run(
+                ["python", script_file],
+                capture_output=True,
+                text=True,
+                check=False  # Don't automatically raise CalledProcessError
+            )
+            output_out = result.stdout
+            error_out = result.stderr
+
+            # Decide success based on return code
+            success = (result.returncode == 0)
+
+            # Send output to the display
+            if display:
+                if output_out:
+                    display.add_message("user", f"Output:\n{output_out}")
+                if error_out:
+                    display.add_message("user", f"Error Message:\n{error_out}")
 
         except Exception as e:
+            # Catch any unexpected Python-level errors from subprocess itself
             output_out = ""
             error_out = f"Error: {str(e)}\n{traceback.format_exc()}"
+            success = False
             if display:
                 display.add_message("user", f"Execution Error:\n{error_out}")
         finally:
-            sys.stdout, sys.stderr = old_stdout, old_stderr
+            # Clean up the temporary file
+            if os.path.exists(script_file):
+                os.remove(script_file)
 
-        if display:
-            if output_out:
-                display.add_message("user", f"\n{output_out}")
-            if error_out:
-                display.add_message("user", f"Error\n{error_out}")
-
-        return {"success": True if not error_out else False, "output": output_out, "error": error_out}
+        return {
+            "success": success,
+            "output": output_out,
+            "error": error_out
+        }
 
     elif script_type == "PowerShell Script":
         if display:
             display.add_message("user", "Executing PowerShell script...")
 
         script_file = "temp_script.ps1"
-        with open(script_file, "w") as f:
+        with open(script_file, "w", encoding="utf-8") as f:
             f.write(script_code)
+
         try:
             result = subprocess.run(
                 ["powershell.exe", "-File", script_file],
                 capture_output=True,
                 text=True,
-                check=True,
+                check=False
             )
             output = result.stdout
             error = result.stderr
-            success = True
+            success = (result.returncode == 0)
 
-            if display:
-                if output:
-                    display.add_message("user", f"PowerShell Output:\n{output}")
+            if display and output:
+                display.add_message("user", f"PowerShell Output:\n{output}")
+            if display and error:
+                display.add_message("user", f"PowerShell Errors:\n{error}")
 
-        except subprocess.CalledProcessError as e:
-            output = e.stdout
-            error = e.stderr
-            success = False
-            if display:
-                display.add_message("user", f"PowerShell Error:\n{error}")
         except Exception as e:
             output = ""
             error = f"Unexpected error: {str(e)}\n{traceback.format_exc()}"
@@ -148,7 +155,11 @@ def execute_script(script_type: str, script_code: str, display: AgentDisplay = N
             if os.path.exists(script_file):
                 os.remove(script_file)
 
-        return {"success": success, "output": output, "error": error}
+        return {
+            "success": success,
+            "output": output,
+            "error": error
+        }
 
     else:
         error_msg = f"Unsupported script type: {script_type}"
@@ -177,6 +188,7 @@ class BashTool(BaseAnthropicTool):
 
     async def _run_command(self, command: str):
         """Execute a command in the shell."""
+        BASH_PROMPT_FILE= get_constant("BASH_PROMPT_FILE")
         output = ""
         try:
             if self.display:

@@ -10,7 +10,3 @@ The app should have the following features:
 - A way to delete data from the CSV file
 - A way to filter the data in the table
 - A way to sort the data in the table
-
-Please uv in order to create the venv, project files, add dependencies, and run the app.
-
-You are working in windows and the directory for the project should be c:\repo\trackapp

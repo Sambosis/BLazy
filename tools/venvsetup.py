@@ -23,6 +23,9 @@ class ProjectSetupTool(BaseAnthropicTool):
     api_type: Literal["custom"] = "custom"
     description: str = "A tool for Python project management: setup projects, add dependencies, and run applications."
 
+    def __init__(self, display=None):
+        super().__init__(display)
+
     def to_params(self) -> dict:
         return {
             "name": self.name,
@@ -111,7 +114,7 @@ class ProjectSetupTool(BaseAnthropicTool):
         ic("Creating virtual environment...")
         self.run_command("uv venv")
         try:
-            self.run_command("uv init")
+            self.run_command("uv init --no-config")
         except:
             pass
 
@@ -181,6 +184,9 @@ class ProjectSetupTool(BaseAnthropicTool):
         Executes the specified command for project management.
         """
         try:
+            if self.display:
+                self.display.add_message("tool", f"ProjectSetupTool executing command: {command}")
+            
             # Convert path string to Path object
             # project_path = Path(project_path)
             project_path = Path(get_constant("PROJECT_DIR"))
@@ -196,10 +202,17 @@ class ProjectSetupTool(BaseAnthropicTool):
 
             # Convert result_data to formatted string
             formatted_output = self.format_output(result_data)
+
+            if self.display:
+                self.display.add_message("tool", f"ProjectSetupTool completed: {formatted_output}")
             return ToolResult(output=formatted_output)
 
         except Exception as e:
-            ic(e)
-            error_msg = f"Failed to execute {command}: {str(e)}"
             rr(f"Error: {error_msg}")
+            # add a 3 second wait
+            await asyncio.sleep(3)
+            if self.display:
+                self.display.add_message("tool", f"ProjectSetupTool error: {str(e)}")
+            error_msg = f"Failed to execute {command}: {str(e)}"
+            
             return ToolResult(error=error_msg)

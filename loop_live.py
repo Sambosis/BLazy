@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import dis
 import hashlib
 import json
 import os
@@ -28,13 +29,15 @@ from tools import (
     BashTool,
     EditTool,
     GetExpertOpinionTool,
-    ToolCollection,
-    ToolResult,
-    ToolError,
+
+    # ToolError,
     WebNavigatorTool,
     ProjectSetupTool
 )
-
+from tools import (
+    ToolCollection,
+    ToolResult
+    )
 # Assume AgentDisplay is defined in the same file or imported
 from rich.live import Live
 from rich.layout import Layout
@@ -202,7 +205,7 @@ def get_journal_contents() -> str:
     except FileNotFoundError:
         return "No journal entries yet."
 
-def truncate_message_content(content: Any, max_length: int = 20000) -> Any:
+def truncate_message_content(content: Any, max_length: int = 10000) -> Any:
     if isinstance(content, str):
         return content[:max_length]
     elif isinstance(content, list):
@@ -218,10 +221,11 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
     try:
         tool_collection = ToolCollection(
             BashTool(display=display),
-            EditTool(),
+            EditTool(display=display),
             GetExpertOpinionTool(),
             WebNavigatorTool(),
-            ProjectSetupTool()
+            ProjectSetupTool(display=display),
+            display=display  # Pass display to ToolCollection
         )
         # ic(tool_collection)
         display.add_message("system", tool_collection.get_tool_names_as_string())
@@ -319,8 +323,8 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     
                     display.add_message("user", display_output)
                     await asyncio.sleep(delay=0.5)
-                quick_summary = await summarize_recent_messages(messages[-4:], display)
-                display.add_message("assistant", f"Here is a quick summary of what I did:\n {quick_summary}")
+                quick_summary = await summarize_recent_messages(messages[-2:], display)
+                display.add_message("assistant",f" {quick_summary}")
                 await asyncio.sleep(0.2)
                 response = client.beta.messages.create(
                     max_tokens=MAX_SUMMARY_TOKENS,
@@ -330,15 +334,12 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     tools=tool_collection.to_params(),
                     betas=betas,
                 )
-                if len(messages) < 2:
+                if len(messages) < 1:
                     display.clear_messages("all")
 
                 # display.add_message("assistant", response.content[0].text) # Update display
                 # await asyncio.sleep(0.2)
-                
-
-
-
+            
                 response_params = []
                 for block in response.content:
                     if hasattr(block, 'text'):
@@ -353,7 +354,10 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                             "input": block.input
                         })
                 messages.append({"role": "assistant", "content": response_params})
-
+                messages_file = LOGS_DIR / "messages.json"
+                display.add_message("tool", f"Saving messages to {messages_file}")
+                with open(messages_file, "w") as f:
+                    json.dump(messages, f, indent=4)
                 tool_result_content: List[BetaToolResultBlockParam] = []
                 for content_block in response_params:
                     output_manager.format_content_block(content_block)
@@ -383,7 +387,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                             tool_result = _make_api_tool_result(error_result, content_block["id"])
                             tool_result_content.append(tool_result)
                         display.live.start()
-                        await asyncio.sleep(10.5)
+                        await asyncio.sleep(0.5)
 
                         # output_manager.format_tool_output(result, content_block["name"])
                         tool_result = _make_api_tool_result(result, content_block["id"])
@@ -399,11 +403,12 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                             "tool_use_id": tool_result["tool_use_id"],
                             "is_error": tool_result["is_error"]
                         }]
-                        
+                        quick_summary = await summarize_recent_messages(messages[-4:], display)
+                        display.add_message("tool", content=f"{quick_summary}")
                         # Add descriptive text about the tool usage
                         combined_content.append({
                             "type": "text",
-                            "text": f"Tool '{content_block['name']}' was called with input: {json.dumps(content_block['input'])}.\nResult: {_extract_text_from_content(tool_output)}"
+                            "text": f"{quick_summary} \nTool '{content_block['name']}' was called with input: {json.dumps(content_block['input'])}.\nResult: {_extract_text_from_content(tool_output)}"
                         })
                         
                         # Add a single message with the combined content
@@ -425,8 +430,8 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                 # display.clear_messages("user")
                 await asyncio.sleep(0.2)
                 messages_to_display = messages[-2:] if len(messages) > 1 else messages[-1:]
-                for message in messages_to_display:
-                    display.add_message("tool", message["content"][0]) # Update display
+                # for message in messages_to_display:
+                #     display.add_message("tool", message["content"][0]) # Update display
 
                 # display.add_message("user",f"There are {len(messages)} messages")
                 # await asyncio.sleep(1.0)

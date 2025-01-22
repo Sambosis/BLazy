@@ -9,7 +9,6 @@ dependencies = [
     "anyio",
     "bandit",
     "bs4",
-    "flask>=3.1.0",
     "ftfy",
     "icecream",
     "langchain-ai",
@@ -32,5 +31,5 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["repo/blazie", "repo/blazie2", "repo/prompt", "repo/rap", "repo/create_module", "repo/acsalestracker", "repo/codeorganize", "repo/draggableDashboard"]
+members = ["repo/blazie", "repo/blazie2", "repo/prompt", "repo/rap", "repo/create_module", "repo/acsalestracker", "repo/codeorganize", "repo/draggableDashboard", "repo/trackapp", "repo/pygamedemo", "repo/solitaredns", "repo/nerblaster", "repo/glbj"]
 

@@ -3,15 +3,18 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, TYPE_CHECKING
 
 from anthropic import APIResponse
 from anthropic.types.beta import BetaContentBlock, BetaMessageParam
 from icecream import ic
 
 from .agent_display import AgentDisplay  # Relative import for AgentDisplay
-from tools import ToolResult # for typing results
 from config import  get_constant, set_constant  # Updated import
+
+if TYPE_CHECKING:
+    from tools.base import ToolResult
+
 class OutputManager:
     def __init__(self, display: AgentDisplay, image_dir: Optional[Path] = None):
         LOGS_DIR = Path(get_constant('LOGS_DIR'))
@@ -35,7 +38,7 @@ class OutputManager:
             ic(f"Error saving image: {e}")
             return None
 
-    def format_tool_output(self, result: ToolResult, tool_name: str):
+    def format_tool_output(self, result: "ToolResult", tool_name: str):
         """Format and display tool output."""
         output_text = f"Used Tool: {tool_name}\n"
         
@@ -51,7 +54,7 @@ class OutputManager:
                 else:
                     output_text += "[red]Failed to save screenshot[/red]\n"
         
-        self.display.add_message("tool", output_text)
+        # self.display.add_message("tool", output_text)
 
     def format_api_response(self, response: APIResponse):
         """Format and display API response."""
@@ -117,7 +120,7 @@ class OutputManager:
                                 input_text = "\n".join(f"{k}: {v}" for k, v in tool_input.items())
                             except json.JSONDecodeError:
                                 input_text = str(tool_input)
-                        self.display.add_message("tool", (tool_name, f"Input: {input_text}"))
+                        # self.display.add_message("tool", (tool_name, f"Input: {input_text}"))
         elif isinstance(content, str):
             text = self._truncate_string(content)
             self.display.add_message("assistant", text)

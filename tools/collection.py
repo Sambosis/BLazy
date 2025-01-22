@@ -18,10 +18,17 @@ from load_constants import write_to_file
 class ToolCollection:
     """A collection of anthropic-defined tools."""
 
-    def __init__(self, *tools: BaseAnthropicTool):
-        self.tools = tools
+    def __init__(self, *tools: BaseAnthropicTool, display=None):
+        self.display = display
+        # Update tools that support display
+        updated_tools = []
+        for tool in tools:
+            if hasattr(tool, 'set_display'):
+                tool.set_display(display)
+            updated_tools.append(tool)
+        self.tools = updated_tools
+        self.tool_map = {tool.to_params()["name"]: tool for tool in self.tools}
         ic(self.tools)
-        self.tool_map = {tool.to_params()["name"]: tool for tool in tools}
         ic(self.tool_map)
     def to_params(
         self,

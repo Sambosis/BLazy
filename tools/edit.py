@@ -51,11 +51,13 @@ class EditTool(BaseAnthropicTool):
 
     _file_history: dict[Path, list[str]]
 
-    def __init__(self):
+    def __init__(self, display=None):
+        super().__init__(display)
         self._file_history = defaultdict(list)
         if not LOG_FILE.exists():
             LOG_FILE.write_text('[]', encoding='utf-8')
-        super().__init__()
+
+
 
     def to_params(self) -> BetaToolTextEditor20241022Param:
         return {
@@ -98,6 +100,10 @@ class EditTool(BaseAnthropicTool):
     ) -> ToolResult:
         """Execute the specified command with proper error handling and formatted output."""
         try:
+            # Add display messages
+            if self.display:
+                self.display.add_message("tool", f"EditTool executing command: {command} on path: {path}")
+
             # Normalize the path first
             _path = self.normalize_path(path)
             
@@ -167,7 +173,13 @@ class EditTool(BaseAnthropicTool):
                     f'Unrecognized command {command}. The allowed commands are: {", ".join(get_args(Command))}'
                 )
 
+            if self.display:
+                self.display.add_message("tool", f"EditTool completed {command}")
+            return ToolResult(output=self.format_output(output_data))
+
         except Exception as e:
+            if self.display:
+                self.display.add_message("tool", f"EditTool error: {str(e)}")
             error_data = {
                 "command": command,
                 "status": "error",
@@ -464,3 +476,4 @@ class EditTool(BaseAnthropicTool):
             LOG_FILE.write_text(json.dumps(logs, indent=2), encoding='utf-8')
         except Exception as e:
             print(f"Warning: Failed to log file operation: {e}")
+            ic(f"Failed to log file operation: {e}")

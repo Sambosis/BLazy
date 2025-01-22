@@ -3,18 +3,23 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, fields, replace
 
 from typing import Any, Optional, Dict
-
+from utils.agent_display import AgentDisplay
 
 
 class BaseAnthropicTool(metaclass=ABCMeta):
     """Base class for all tools."""
 
-    def __init__(self, input_schema: Optional[Dict[str, Any]] = None):
+    def __init__(self, input_schema: Optional[Dict[str, Any]] = None, display: Optional[AgentDisplay] = None):
         self.input_schema = input_schema or {
             "type": "object",
             "properties": {},
             "required": []
         }
+        self.display = display
+
+    def set_display(self, display: AgentDisplay):
+        """Set the display instance for the tool."""
+        self.display = display
 
     @property
     @abstractmethod
