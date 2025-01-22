@@ -464,7 +464,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
 
                     
-                if len(messages) > 22:
+                if len(messages) > 42:
                     last_3_messages = messages[-3:]
                     new_context = refresh_context(task)
                     messages = [{"role": "user", "content": new_context}]
@@ -476,6 +476,10 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                         display.add_message("tool", f"Calling tool: {content_block['name']}")
                         display.live.stop()
                         await asyncio.sleep(0.1)
+                        
+                        # Initialize result outside try block
+                        result = ToolResult(output="Tool execution not started")
+                        
                         try:
                             ic(content_block['name'])
                             ic(content_block["input"])
@@ -487,45 +491,37 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                             if result is None:
                                 result = ToolResult(output="Tool execution failed with no result")
                             
+                        except Exception as e:
+                            result = ToolResult(output=f"Tool execution failed: {str(e)}")
+                        
+                        finally:
                             tool_result = _make_api_tool_result(result, content_block["id"])
                             ic(tool_result)
                             tool_result_content.append(tool_result)
-                            
-                            tool_output = result.output if hasattr(result, 'output') else str(result)
-                            # ...existing code...
-                        except Exception as e:
-                            error_result = ToolResult(output=f"Tool execution failed: {str(e)}")
-                            tool_result = _make_api_tool_result(error_result, content_block["id"])
-                            tool_result_content.append(tool_result)
-                        display.live.start()
-                        await asyncio.sleep(0.5)
+                            display.live.start()
+                            await asyncio.sleep(0.5)
 
-                        # output_manager.format_tool_output(result, content_block["name"])
-                        tool_result = _make_api_tool_result(result, content_block["id"])
-                        ic(tool_result)
-                        tool_result_content.append(tool_result)
-                        tool_output = result.output if hasattr(result, 'output') else str(result)
-                        # display.add_message("tool", (content_block["name"], _extract_text_from_content(tool_output)))
-                        
-                        # Create a combined content list with both text and tool result
-                        combined_content = [{
-                            "type": "tool_result",
-                            "content": tool_result["content"],
-                            "tool_use_id": tool_result["tool_use_id"],
-                            "is_error": tool_result["is_error"]
-                        }]
-                        
-                        # Add descriptive text about the tool usage
-                        combined_content.append({
-                            "type": "text",
-                            "text": f"Tool '{content_block['name']}' was called with input: {json.dumps(content_block['input'])}.\nResult: {_extract_text_from_content(tool_output)}"
-                        })
-                        
-                        # Add a single message with the combined content
-                        messages.append({
-                            "role": "user",
-                            "content": combined_content
-                        })
+                            tool_output = result.output if hasattr(result, 'output') else str(result)
+                            
+                            # Create a combined content list with both text and tool result
+                            combined_content = [{
+                                "type": "tool_result",
+                                "content": tool_result["content"],
+                                "tool_use_id": tool_result["tool_use_id"],
+                                "is_error": tool_result["is_error"]
+                            }]
+                            
+                            # Add descriptive text about the tool usage
+                            combined_content.append({
+                                "type": "text",
+                                "text": f"Tool '{content_block['name']}' was called with input: {json.dumps(content_block['input'])}.\nResult: {_extract_text_from_content(tool_output)}"
+                            })
+                            
+                            # Add a single message with the combined content
+                            messages.append({
+                                "role": "user",
+                                "content": combined_content
+                            })
                 if not tool_result_content:
                     await asyncio.sleep(delay=0.2)
 

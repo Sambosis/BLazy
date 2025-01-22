@@ -92,9 +92,9 @@ class AgentDisplay:
     def create_tool_panel(self, results, title, style):
         """Create a panel for tool results"""
         message_text = Text()
-        for result in results[-3:]:  # Show last 5 results
-            if len(result) <2 or len(result) > 1000:
-                continue
+        for result in results[-5:]:  # Show last 5 results
+            if len(result) > 1000:
+                message_text.append(f"{result[:1000]}...\n", style=style)
             message_text.append(f"{result}\n", style=style)
                 
         return Panel(

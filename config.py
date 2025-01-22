@@ -28,10 +28,10 @@ PROMPTS_DIR = TOP_LEVEL_DIR / 'prompts'
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOGS_DIR / 'file_creation_log.json'
 MESSAGES_FILE = LOGS_DIR / 'messages.json'
-# JOURNAL_MODEL = "claude-3-5-haiku-latest"
-# SUMMARY_MODEL = "claude-3-5-haiku-latest"
-JOURNAL_MODEL = "claude-3-5-sonnet-latest"
-SUMMARY_MODEL = "claude-3-5-sonnet-latest"
+JOURNAL_MODEL = "claude-3-5-haiku-latest"
+SUMMARY_MODEL = "claude-3-5-haiku-latest"
+# JOURNAL_MODEL = "claude-3-5-sonnet-latest"
+# SUMMARY_MODEL = "claude-3-5-sonnet-latest"
 MAIN_MODEL = "claude-3-5-sonnet-latest"
 COMPUTER_USE_BETA_FLAG = "computer-use-2024-10-22"
 PROMPT_CACHING_BETA_FLAG = "prompt-caching-2024-07-31"
