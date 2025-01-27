@@ -120,10 +120,14 @@ class GoToURLReportsTool(BaseAnthropicTool):
 
             url_suffix = df.loc[df['display_name'] == best_match, 'url'].iloc[0]
             full_url = f"https://www.autochlor.net/wps/{url_suffix}"
+            ic(f"Full URL: {full_url}")
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=False)
+                ic
                 context = await browser.new_context(storage_state=r"C:\mygit\compuse\computer_use_demo\state.json")
+                ic(context)
                 page = await context.new_page()
+                ic(page)
                 await page.goto(full_url)
                 # press the PRINT button
                 page.click('input[type="submit"][value="PRINT"]')

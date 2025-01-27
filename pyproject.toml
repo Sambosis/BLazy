@@ -5,31 +5,64 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "anthropic",
-    "anyio",
-    "bandit",
-    "bs4",
-    "ftfy",
-    "icecream",
-    "langchain-ai",
-    "langchain-community",
-    "mypy",
-    "networkx",
-    "openai",
-    "pandas",
-    "playwright",
-    "pyautogui",
-    "pydeps",
-    "pysnooper",
-    "python-dotenv",
+    "anthropic>=0.18.1",
+    "anyio>=4.2.0",
+    "bandit>=1.7.7",
+    "bs4>=0.0.2",
+    "ftfy>=6.1.3",
+    "colorama>=0.4.6",
+    "icecream>=2.1.3",  # Specify exact version that's known to work
+    "langchain-ai>=0.0.0",
+    "langchain-community>=0.0.0",
+    "mypy>=1.8.0",
+    "networkx>=3.2.1",
+    "openai>=1.12.0",
+    "pandas>=2.2.0",
+    "playwright>=1.41.2",
+    "pyautogui>=0.9.54",
+    "pydeps>=1.12.17",
+    "pysnooper>=1.2.0",
+    "python-dotenv>=1.0.1",
     "restrictedpython>=7.4",
-    "ruff",
-    "tenacity",
-    "types-beautifulsoup4",
-    "types-pyautogui",
-    "unimport",
+    "ruff>=0.2.1",
+    "tenacity>=8.2.3",
+    "types-beautifulsoup4>=4.12.0.7",
+    "types-pyautogui>=0.9.3.0",
+    "unimport>=1.2.0",
+    "rich>=13.9.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["utils", "tools"]  # Only include the actual Python packages
+package-dir = {"" = "."}
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.md", "*.txt"]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "logs/*",
+    "repo/*",
+    "cache/*",
+    "ignore/*",
+    "journal/*",
+    "prompts/*",
+    "downloads/*",
+    "llm_gen_code/*",
+    "system_prompt/*",
+    "default_images/*",
+    "computer_tool_images/*",
+    "new_reorganized_code/*"
 ]
 
 [tool.uv.workspace]
-members = ["repo/blazie", "repo/blazie2", "repo/prompt", "repo/rap", "repo/create_module", "repo/acsalestracker", "repo/codeorganize", "repo/draggableDashboard", "repo/trackapp", "repo/pygamedemo", "repo/solitaredns", "repo/nerblaster", "repo/glbj", "repo/mathpygame"]
+members = ["repo/acmore", "repo/executable", "repo/pnp"]
+
+[tool.ruff]
+line-length = 120
+
 

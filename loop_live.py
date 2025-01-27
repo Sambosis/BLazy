@@ -21,7 +21,7 @@ from anthropic.types.beta import (
     BetaToolResultBlockParam,
 )
 from dotenv import load_dotenv
-from icecream import ic, install
+from icecream import ic  # Remove 'install' from import
 from rich import print as rr
 from rich.prompt import Prompt, Confirm
 # from load_constants import SYSTEM_PROMPT, BASH_PROMPT_FILE
@@ -30,6 +30,7 @@ from tools import (
     EditTool,
     GetExpertOpinionTool,
     WindowsNavigationTool,
+    GoToURLReportsTool,
     # ToolError,
     WebNavigatorTool,
     ProjectSetupTool
@@ -50,7 +51,6 @@ from queue import Queue
 from utils.agent_display import AgentDisplay
 from utils.output_manager import OutputManager
 load_dotenv()
-install()
 
 ICECREAM_OUTPUT_FILE = Path.cwd() / "debug_log.json"
 
@@ -316,6 +316,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             GetExpertOpinionTool(),
             WindowsNavigationTool(),
             WebNavigatorTool(),
+            GoToURLReportsTool(),
             ProjectSetupTool(display=display),
             display=display  # Pass display to ToolCollection
         )
@@ -464,7 +465,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
 
                     
-                if len(messages) > 42:
+                if len(messages) > 33:
                     last_3_messages = messages[-3:]
                     new_context = refresh_context(task)
                     messages = [{"role": "user", "content": new_context}]
