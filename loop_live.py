@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from re import U
 from typing import Any, Callable, Dict, List, Optional, cast
+
 from config import *
 write_constants_to_file()
 
@@ -21,7 +22,7 @@ from anthropic.types.beta import (
     BetaToolResultBlockParam,
 )
 from dotenv import load_dotenv
-from icecream import ic  # Remove 'install' from import
+from icecream import ic, install
 from rich import print as rr
 from rich.prompt import Prompt, Confirm
 # from load_constants import SYSTEM_PROMPT, BASH_PROMPT_FILE
@@ -30,10 +31,10 @@ from tools import (
     EditTool,
     GetExpertOpinionTool,
     WindowsNavigationTool,
-    GoToURLReportsTool,
     # ToolError,
     WebNavigatorTool,
-    ProjectSetupTool
+    ProjectSetupTool,
+    WriteCodeTool
 )
 from tools import (
     ToolCollection,
@@ -51,39 +52,40 @@ from queue import Queue
 from utils.agent_display import AgentDisplay
 from utils.output_manager import OutputManager
 load_dotenv()
+install()
 
-ICECREAM_OUTPUT_FILE = Path.cwd() / "debug_log.json"
+
 
 with open(SYSTEM_PROMPT_FILE, 'r', encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
 filename = ""
-
-def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
-    lines = s.split('\n')
-    formatted_lines = []
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-
-    for line in lines:
-        if "tool_input:" in line:
-            try:
-                ic(line)
-                json_part = line.split("tool_input: ")[1]
-                if json_part.strip().startswith('{') and json_part.strip().endswith('}'):
-                    json_obj = json.loads(json_part)
-                    pretty_json = json.dumps(json_obj, indent=4)
-                    formatted_lines.append("tool_input: " + pretty_json)
-                else:
-                   formatted_lines.append(line)
-            except (IndexError, json.JSONDecodeError):
-                formatted_lines.append(line)
-        else:
-            formatted_lines.append(line)
-    with open(file_path, 'a', encoding="utf-8") as f:
-        f.write('\n'.join(formatted_lines))
-        f.write('\n' + '-' * 80 + '\n')
 ic.configureOutput(includeContext=True, outputFunction=write_to_file)
 
+
+def archive_file(file_path):
+    """Archive a file by appending moving it to an archive folder with a timestamp."""
+    try:
+
+        # Get the filename and extension
+        file_path = Path(file_path)
+        filename = file_path.stem
+        extension = file_path.suffix
+        # Create the archive directory if it doesn't exist
+        archive_dir = Path(LOGS_DIR, "archive")
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        # Create the new path with timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        new_path = Path(archive_dir, f"{filename}_{timestamp}{extension}")
+        # input(f"Press Enter to create new path {new_path}...")
+        # Move the file to the archive directory
+        file_path.rename(new_path)
+        return new_path
+    except Exception as e:
+        return f"Error archiving file: {str(e)}"
+archive_file(ICECREAM_OUTPUT_FILE)
+archive_file(LOG_FILE)
+archive_file(MESSAGES_FILE)
 
 def refresh_context(task):
     """Combines first message with summaries and file contents into a properly formatted message list"""
@@ -316,8 +318,8 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
             GetExpertOpinionTool(),
             WindowsNavigationTool(),
             WebNavigatorTool(),
-            GoToURLReportsTool(),
             ProjectSetupTool(display=display),
+            WriteCodeTool(display=display),
             display=display  # Pass display to ToolCollection
         )
         # ic(tool_collection)
@@ -465,7 +467,7 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
 
 
                     
-                if len(messages) > 33:
+                if len(messages) > 42:
                     last_3_messages = messages[-3:]
                     new_context = refresh_context(task)
                     messages = [{"role": "user", "content": new_context}]
@@ -529,11 +531,17 @@ async def sampling_loop(*, model: str, messages: List[BetaMessageParam], api_key
                     display.live.stop()  # Stop the live display
                     # add a small delay
                     await asyncio.sleep(0.2)
-                    rr("\nAwaiting User Input ⌨️")
-                    task = Prompt.ask("What would you like to do next? Enter 'no' to exit")
+                    # keep aski
+                    # ng until you get a non-empty response
+                    while True:
+                        rr("\nAwaiting User Input ⌨️")
+                        task = Prompt.ask("What would you like to do next? Enter 'no' to exit")
+                        if task.lower() in ["no", "n"]:
+                            running = False
+                            break
+                        if task:
+                            break
                     display.live.start()  # Restart the live display
-                    if task.lower() in ["no", "n"]:
-                        running = False
                     messages.append({"role": "user", "content": task})
                     # display.clear_messages("user")
                     await asyncio.sleep(0.1)

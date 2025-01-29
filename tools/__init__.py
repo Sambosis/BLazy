@@ -9,7 +9,7 @@ from .gotourl_reports import GoToURLReportsTool
 # from .get_serp import GoogleSearchTool
 from .windows_navigation import WindowsNavigationTool
 # from .test_navigation_tool import windows_navigate
-
+from .write_code import WriteCodeTool
 __all__ = [
     "BaseAnthropicTool",
     "ToolError",
@@ -22,6 +22,7 @@ __all__ = [
     "ProjectSetupTool",
     "GoToURLReportsTool",
     # "GoogleSearchTool",
-    "WindowsNavigationTool"
+    "WindowsNavigationTool",
+    "WriteCodeTool"
     # "windows_navigate"
 ]

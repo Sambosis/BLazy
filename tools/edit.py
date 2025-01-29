@@ -16,6 +16,7 @@ import datetime
 import json
 from load_constants import  write_to_file, ICECREAM_OUTPUT_FILE
 from config import get_constant, set_constant, REPO_DIR, PROJECT_DIR, LOGS_DIR  # Updated import
+from utils.file_logger import log_file_operation
 
 # Reconfigure stdout to use UTF-8 encoding
 sys.stdout.reconfigure(encoding='utf-8')
@@ -50,8 +51,8 @@ class EditTool(BaseAnthropicTool):
 
     def __init__(self, display=None):
         super().__init__(display)
-        if not self.LOG_FILE.exists():
-            self.LOG_FILE.write_text('[]', encoding='utf-8')
+        # if not self.LOG_FILE.exists():
+        #     self.LOG_FILE.write_text('[]', encoding='utf-8')
         self._file_history = defaultdict(list)
         
 
@@ -108,7 +109,7 @@ class EditTool(BaseAnthropicTool):
                     raise ToolError("Parameter `file_text` is required for command: create")
                 self.write_file(_path, file_text)
                 self._file_history[_path].append(file_text)
-                self.log_file_operation(_path, "create")
+                log_file_operation(_path, "create")
                 
                 output_data = {
                     "command": "create",
@@ -415,6 +416,8 @@ class EditTool(BaseAnthropicTool):
             ic(file)
             # Write the file
             full_path.write_text(file, encoding="utf-8")
+            # Log the file operation
+            log_file_operation(full_path, "modify")
         except Exception as e:
             raise ToolError(f"Error writing to {path}: {str(e)}")
 
@@ -440,41 +443,3 @@ class EditTool(BaseAnthropicTool):
             + file_content
             + "\n"
         )
-
-    def log_file_operation(self, path: Path, operation: str) -> None:
-        """Log operations on a file with timestamp."""
-        try:
-            # Initialize default log structure
-            logs = {}
-            
-            # Read existing logs if file exists and has content
-            if self.LOG_FILE.exists():
-                content = self.LOG_FILE.read_text(encoding='utf-8').strip()
-                if content:  # Only try to parse if there's content
-                    try:
-                        logs = json.loads(content)
-                    except json.JSONDecodeError:
-                        # If JSON is invalid, start fresh with empty dict
-                        logs = {}
-
-            path_str = str(path)
-            
-            # Create new entry if file not logged before
-            if path_str not in logs:
-                logs[path_str] = {
-                    "created_at": datetime.datetime.now().isoformat(),
-                    "operations": []
-                }
-            
-            # Add new operation
-            logs[path_str]["operations"].append({
-                "timestamp": datetime.datetime.now().isoformat(),
-                "operation": operation
-            })
-            
-            # Write updated logs
-            self.LOG_FILE.write_text(json.dumps(logs, indent=2), encoding='utf-8')
-            
-        except Exception as e:
-            print(f"Warning: Failed to log file operation: {str(e)}")
-            ic(f"Failed to log file operation: {str(e)}")

@@ -28,3 +28,4 @@ Design iteration documentation
 STL files for each design
 OpenSCAD scripts for design, simulation, and optimization
 Note: Ensure all designs are functional and capable of firing darts. Use absolute paths in Windows for all file operations.
+Your first step is to list all of the files in your project directory.

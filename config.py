@@ -1,7 +1,9 @@
 from os import mkdir
 from pathlib import Path
 import json
+from datetime import datetime
 
+from icecream import ic
 global PROJECT_DIR
 PROJECT_DIR = None
 # Define the top-level directory
@@ -25,6 +27,7 @@ SCRIPTS_DIR = TOP_LEVEL_DIR / 'scripts'
 TESTS_DIR = TOP_LEVEL_DIR / 'tests'
 LOGS_DIR = TOP_LEVEL_DIR / 'logs'  # Ensure LOGS_DIR is based on PROJECT_DIR
 PROMPTS_DIR = TOP_LEVEL_DIR / 'prompts'
+ICECREAM_OUTPUT_FILE =  LOGS_DIR / "debug_log.md"
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOGS_DIR / 'file_creation_log.json'
 MESSAGES_FILE = LOGS_DIR / 'messages.json'
@@ -74,7 +77,8 @@ def write_constants_to_file():
         'PROJECT_DIR': str(PROJECT_DIR) if PROJECT_DIR else "",
         'PROMPTS_DIR': str(PROMPTS_DIR),
         'LOG_FILE': str(LOG_FILE),
-        'MESSAGES_FILE': str(MESSAGES_FILE)
+        'MESSAGES_FILE': str(MESSAGES_FILE),
+        'ICECREAM_OUTPUT_FILE': str(ICECREAM_OUTPUT_FILE)
     }
     with open(CACHE_DIR / 'constants.json', 'w') as f:
         json.dump(constants, f, indent=4)
@@ -134,3 +138,54 @@ def set_project_dir(new_dir):
 # function to get the project directory
 def get_project_dir():
     return PROJECT_DIR
+
+def write_to_file(s: str, file_path: str = ICECREAM_OUTPUT_FILE):
+    """Write debug output to a file in a compact, VS Code collapsible format."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    lines = s.split('\n')
+    output = []
+
+    # save the first line to a variable
+    first_line = lines[0]
+    # remove the first line from the lines list
+    lines = lines[1:]
+
+    
+    output.append(f"<details><summary>ENTRY {first_line}: {timestamp}</summary> ")
+    
+    # Join and clean multi-line strings
+    current_line = ""
+    for line in lines:
+        if line.strip() == "'":  # Skip standalone quote marks
+            continue
+        # Remove trailing quotes and clean up the line
+        cleaned_line = line.strip().strip("'")
+        if not cleaned_line:  # Skip empty lines
+            continue
+            
+        if "tool_input:" in line:
+            try:
+                json_part = line.split("tool_input: ")[1]
+                if json_part.strip().startswith('{') and json_part.strip().endswith('}'):
+                    json_obj = json.loads(json_part)
+                    output.append(f"tool_input: {json.dumps(json_obj, separators=(',', ':'))}")
+                else:
+                    output.append(f"> {cleaned_line}")
+            except (IndexError, json.JSONDecodeError):
+                output.append(f"> {cleaned_line}")
+        else:
+            # If line contains JSON-like content, try to parse and format it
+            if cleaned_line.strip().startswith('{') and cleaned_line.strip().endswith('}'):
+                try:
+                    json_obj = json.loads(cleaned_line)
+                    output.append(json.dumps(json_obj, separators=(',', ':')))
+                except json.JSONDecodeError:
+                    output.append(f"> {cleaned_line}")
+            else:
+                output.append(f"> {cleaned_line}")
+    output.append("</details>")
+    
+    with open(file_path, 'a', encoding="utf-8") as f:
+        f.write('\n'.join(output) + '\n')
+
+ic.configureOutput(includeContext=True, outputFunction=write_to_file)

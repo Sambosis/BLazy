@@ -208,9 +208,9 @@ class ProjectSetupTool(BaseAnthropicTool):
             return ToolResult(output=formatted_output)
 
         except Exception as e:
-            rr(f"Error: {error_msg}")
+            # rr(f"Error: {error_msg}")
             # add a 3 second wait
-            await asyncio.sleep(3)
+            # await asyncio.sleep(3)
             if self.display:
                 self.display.add_message("tool", f"ProjectSetupTool error: {str(e)}")
             error_msg = f"Failed to execute {command}: {str(e)}"

@@ -10,9 +10,7 @@ import io
 import traceback
 from datetime import datetime
 from anthropic import Anthropic
-from openai import OpenAI
-from dotenv import load_dotenv
-load_dotenv()
+
 from .base import BaseAnthropicTool, ToolError, ToolResult
 from utils.agent_display import AgentDisplay  # Add this line
 from load_constants import WORKER_DIR, write_to_file
@@ -30,31 +28,27 @@ def read_prompt_from_file(file_path: str, bash_command: str) -> str:
         prompt_string = file.read()
     prompt_string += f"Your project directory is {project_dir}. You need to make sure that all files you create and work you do is done in that directory. \n"
     prompt_string += f"Your bash command is: {bash_command}\n"
-    # temp= input(f" The prompt is: {prompt_string}")
+    temp= input(f" The prompt is: {prompt_string}")
     return prompt_string
 
-def generate_script_with_llm(prompt: str) -> str:
+async def generate_script_with_llm(prompt: str) -> str:
     """Send a prompt to the LLM and return its response."""
-    ic.configureOutput(includeContext=True, outputFunction=write_to_file)
-
     try:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
         ic(prompt)
-        # 1. Create a client with custom endpoint
-        client = OpenAI(
-            base_url="http://localhost:1234/v1",  # Your alternative API endpoint
-        )
-
-        # 2. Use it like normal OpenAI calls
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Use model name your endpoint expects
+        client = Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-3-5-haiku-latest",
+            max_tokens=4000,
             messages=[
-                {"role": "user", "content": prompt}
-            ]
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
         )
-        ic(response)
-        response.choices[0].message.content
-        ic(response.choices[0].message.content)
-        return response.choices[0].message.content
+        ic(response.content[0].text)
+        return response.content[0].text
     except Exception as e:
         raise ToolError(f"Error during LLM API call: {e}")
 
@@ -178,8 +172,6 @@ class BashTool(BaseAnthropicTool):
     def __init__(self, display: AgentDisplay = None):
         self.display = display
         super().__init__()
-        ic.configureOutput(includeContext=True, outputFunction=write_to_file)
-
         
     description = """
         A tool that allows the agent to run bash commands. On Windows it uses PowerShell
@@ -201,11 +193,9 @@ class BashTool(BaseAnthropicTool):
         try:
             if self.display:
                 self.display.add_message("user", f"Processing command: {command}")
-                self.display.add_message("tool", f"Processing command: {command}")
 
             prompt = read_prompt_from_file(BASH_PROMPT_FILE, command)
-            response = generate_script_with_llm(prompt)
-            self.display.add_message("user", f"response: {response}")
+            response = await generate_script_with_llm(prompt)
             script_type, script_code = parse_llm_response(response)
 
             # Pass the display to execute_script

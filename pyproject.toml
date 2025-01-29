@@ -60,7 +60,7 @@ package-dir = {"" = "."}
 ]
 
 [tool.uv.workspace]
-members = ["repo/acmore", "repo/executable", "repo/pnp"]
+members = ["repo/scad"]
 
 [tool.ruff]
 line-length = 120
